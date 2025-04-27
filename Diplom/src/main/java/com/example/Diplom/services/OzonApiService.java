@@ -6,7 +6,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-
 @Service
 public class OzonApiService {
 
@@ -19,17 +18,13 @@ public class OzonApiService {
     @Value("${ozon.api.key}")
     private String apiKey;
 
-    private final String API_URL = "https://api-seller.ozon.ru";
-    private final String CLIENT_ID = "2539576";
-    private final String API_KEY = "49f38f21-d52d-4097-aca8-74415a8a86a4";
-
     public ResponseEntity<String> getProductList() {
         RestTemplate restTemplate = new RestTemplate();
 
         // Заголовки запроса
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Client-Id", CLIENT_ID);
-        headers.set("Api-Key", API_KEY);
+        headers.set("Client-Id", clientId);
+        headers.set("Api-Key", apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         // Тело запроса
@@ -43,7 +38,7 @@ public class OzonApiService {
 
         // Отправка запроса
         return restTemplate.exchange(
-                API_URL + "/v3/product/list",
+                apiUrl + "/v3/product/list",
                 HttpMethod.POST,
                 entity,
                 String.class
@@ -55,8 +50,8 @@ public class OzonApiService {
 
         // Заголовки запроса
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Client-Id", CLIENT_ID);
-        headers.set("Api-Key", API_KEY);
+        headers.set("Client-Id", clientId);
+        headers.set("Api-Key", apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         // Тело запроса
@@ -70,7 +65,7 @@ public class OzonApiService {
 
         // Отправка запроса
         return restTemplateImage.exchange(
-                API_URL + "/v1/product/pictures/import",
+                apiUrl + "/v1/product/pictures/import",
                 HttpMethod.POST,
                 entity,
                 String.class

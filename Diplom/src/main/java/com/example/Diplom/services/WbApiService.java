@@ -8,10 +8,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-
-// попка
-
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,6 +16,9 @@ public class WbApiService {
 
     @Value("${wb.api.key}")
     private String apiKey;
+
+    @Value("${wb.api.url}")
+    private String apiUrl;
 
     public List<WbProductResponse> getProductList() {
         RestTemplate restTemplate = new RestTemplate();
@@ -35,7 +34,7 @@ public class WbApiService {
         HttpEntity<WbProductListRequest> entity = new HttpEntity<>(request, headers);
 
         ResponseEntity<WbApiResponse> response = restTemplate.exchange(
-                "https://content-api.wildberries.ru/content/v2/get/cards/list",
+                apiUrl + "/content/v2/get/cards/list",
                 HttpMethod.POST,
                 entity,
                 WbApiResponse.class
