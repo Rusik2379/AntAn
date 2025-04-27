@@ -8,6 +8,10 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+
+// попка
+
+
 import java.util.List;
 import java.util.stream.Collectors;
 
