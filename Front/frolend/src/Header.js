@@ -22,7 +22,6 @@ const Header = () => {
                     <span className="header-item">Расписание</span>
                 </Link>
             </header>            
-            <ProductTable />
         </div>)
 
 }
