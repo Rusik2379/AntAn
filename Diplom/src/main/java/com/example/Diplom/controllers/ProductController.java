@@ -1,6 +1,5 @@
 package com.example.Diplom.controllers;
 
-
 import com.example.Diplom.services.OzonApiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +25,6 @@ public class ProductController {
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/api/ozon/products")
     @ResponseBody
-//    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<?> getOzonProducts() {
         try {
             ResponseEntity<String> response = ozonApiService.getProductList();
@@ -40,6 +38,25 @@ public class ProductController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                     .body("Внутренняя ошибка сервера: " + e.getMessage());
+        }
+    }
+
+    @CrossOrigin(origins = "http://localhost:3000")
+    @GetMapping("/api/ozon/products/{productId}/pictures")
+    @ResponseBody
+    public ResponseEntity<?> getOzonProductPictures(@PathVariable String productId) {
+        try {
+            ResponseEntity<String> response = ozonApiService.getProductPicturesInfo(productId);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                return ResponseEntity.status(response.getStatusCode())
+                        .body("Ошибка при запросе изображений товара в Ozon API: " + response.getBody());
+            }
+
+            return response;
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Внутренняя ошибка сервера при получении изображений: " + e.getMessage());
         }
     }
 }
