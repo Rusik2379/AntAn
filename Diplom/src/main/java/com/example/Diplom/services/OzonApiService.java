@@ -97,4 +97,19 @@ public class OzonApiService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         return headers;
     }
+
+    public ResponseEntity<String> getProductDescription(String productId) {
+        HttpHeaders headers = createHeaders();
+
+        String requestBody = String.format("{\"product_id\": \"%s\"}", productId);
+        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+        return restTemplate.exchange(
+                apiUrl + "/v1/product/info/description",
+                HttpMethod.POST,
+                entity,
+                String.class
+        );
+    }
+
 }
