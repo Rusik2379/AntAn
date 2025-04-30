@@ -4,10 +4,12 @@ import './ProductTable.css';
 
 const ProductTable = () => {
     const [products, setProducts] = useState([]);
+    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [ozonImages, setOzonImages] = useState({});
     const [imageLoading, setImageLoading] = useState({});
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -15,6 +17,7 @@ const ProductTable = () => {
                 // 1. Загружаем список товаров
                 const response = await axios.get('http://localhost:8080/api/products/merged');
                 setProducts(response.data);
+                setFilteredProducts(response.data); // Инициализируем отфильтрованные товары
 
                 // 2. Инициализируем состояние загрузки изображений
                 const initialImageLoading = {};
@@ -74,6 +77,27 @@ const ProductTable = () => {
         fetchData();
     }, []);
 
+    // Функция для обработки поиска
+    useEffect(() => {
+        if (searchTerm.trim() === '') {
+            setFilteredProducts(products);
+        } else {
+            const lowercasedSearch = searchTerm.toLowerCase();
+            const filtered = products.filter(product => {
+                // Поиск по артикулу (vendorCode)
+                const matchesVendorCode = product.vendorCode.toLowerCase().includes(lowercasedSearch);
+                
+                // Поиск по названию товара (из Ozon или WB)
+                const ozonName = product.ozonData?.name?.toLowerCase() || '';
+                const wbTitle = product.wbData?.title?.toLowerCase() || '';
+                const matchesName = ozonName.includes(lowercasedSearch) || wbTitle.includes(lowercasedSearch);
+                
+                return matchesVendorCode || matchesName;
+            });
+            setFilteredProducts(filtered);
+        }
+    }, [searchTerm, products]);
+
     if (loading) return (
         <div className="loading-container">
             <div className="loading-spinner"></div>
@@ -83,10 +107,32 @@ const ProductTable = () => {
     
     if (error) return <div>{error}</div>;
 
-
     return (
         <div style={{ overflowX: 'auto' }}>
             <h2>Товары с Ozon и Wildberries</h2>
+            
+            {/* Добавляем поле поиска */}
+            <div style={{ marginBottom: '20px' }}>
+                <input
+                    type="text"
+                    placeholder="Поиск по артикулу или названию..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                        padding: '8px 12px',
+                        width: '300px',
+                        borderRadius: '4px',
+                        border: '1px solid #ddd',
+                        fontSize: '16px'
+                    }}
+                />
+                {searchTerm && (
+                    <span style={{ marginLeft: '10px', color: '#666' }}>
+                        Найдено товаров: {filteredProducts.length}
+                    </span>
+                )}
+            </div>
+            
             <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                 <thead>
                     <tr style={{ backgroundColor: '#f2f2f2' }}>
@@ -101,7 +147,7 @@ const ProductTable = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {products.map((product, index) => {
+                    {filteredProducts.map((product, index) => {
                         const name = product.wbData?.title || product.ozonData?.name || '-';
                         const productId = product.ozonData?.product_id;
                         const ozonImageUrl = productId ? ozonImages[productId] : null;
@@ -180,6 +226,19 @@ const ProductTable = () => {
                     })}
                 </tbody>
             </table>
+            
+            {filteredProducts.length === 0 && searchTerm && (
+                <div style={{ 
+                    marginTop: '20px', 
+                    padding: '20px', 
+                    textAlign: 'center',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd'
+                }}>
+                    Товары не найдены. Попробуйте изменить условия поиска.
+                </div>
+            )}
         </div>
     );
 };
