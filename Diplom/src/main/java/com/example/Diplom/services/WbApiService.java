@@ -91,7 +91,6 @@ public class WbApiService {
                             WbStocksResponse.Stock::getAmount
                     ));
         } catch (Exception e) {
-            // В случае ошибки возвращаем пустую карту
             return Collections.emptyMap();
         }
     }
@@ -104,6 +103,11 @@ public class WbApiService {
                     response.setNmID(card.getNmID());
                     response.setUpdatedAt(card.getUpdatedAt());
                     response.setTitle(card.getTitle());
+
+                    // Устанавливаем URL изображения (первое доступное изображение)
+                    if (card.getPhotos() != null && !card.getPhotos().isEmpty()) {
+                        response.setImageUrl(card.getPhotos().get(0).getImageUrl());
+                    }
 
                     // Собираем все SKU из всех размеров
                     List<String> allSkus = card.getSizes().stream()

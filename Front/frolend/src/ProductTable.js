@@ -8,9 +8,10 @@ const ProductTable = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [ozonImages, setOzonImages] = useState({});
+    const [wbImages, setWbImages] = useState({});
     const [imageLoading, setImageLoading] = useState({});
     const [searchTerm, setSearchTerm] = useState('');
-    const [platformFilter, setPlatformFilter] = useState('all'); // 'all', 'ozon', 'wb'
+    const [platformFilter, setPlatformFilter] = useState('all');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -21,20 +22,32 @@ const ProductTable = () => {
 
                 const initialImageLoading = {};
                 const initialOzonImages = {};
+                const initialWbImages = {};
                 
                 response.data.forEach(product => {
+                    // Инициализация для Ozon
                     if (product.ozonData) {
-                        initialImageLoading[product.ozonData.product_id] = true;
-                        initialOzonImages[product.ozonData.product_id] = null;
+                        const productId = product.ozonData.product_id;
+                        initialImageLoading[`ozon_${productId}`] = true;
+                        initialOzonImages[productId] = null;
+                    }
+                    
+                    // Инициализация для WB
+                    if (product.wbData) {
+                        initialImageLoading[`wb_${product.wbData.nmID}`] = false;
+                        if (product.wbData.imageUrl) {
+                            initialWbImages[product.wbData.nmID] = product.wbData.imageUrl;
+                        }
                     }
                 });
                 
                 setImageLoading(initialImageLoading);
                 setOzonImages(initialOzonImages);
+                setWbImages(initialWbImages);
                 setLoading(false);
 
+                // Загружаем изображения Ozon
                 const ozonProducts = response.data.filter(p => p.ozonData);
-                
                 for (const product of ozonProducts) {
                     const productId = product.ozonData.product_id;
                     try {
@@ -55,11 +68,11 @@ const ProductTable = () => {
                             }));
                         }
                     } catch (err) {
-                        console.error(`Ошибка загрузки изображения для товара ${productId}:`, err);
+                        console.error(`Ошибка загрузки изображения Ozon для товара ${productId}:`, err);
                     } finally {
                         setImageLoading(prev => ({
                             ...prev,
-                            [productId]: false
+                            [`ozon_${productId}`]: false
                         }));
                     }
                 }
@@ -98,7 +111,6 @@ const ProductTable = () => {
                 break;
             case 'all':
             default:
-                // Без фильтрации
                 break;
         }
         
@@ -143,6 +155,91 @@ const ProductTable = () => {
         }
 
         return total > 0 ? `${total} шт.` : '-';
+    };
+
+    const renderProductImage = (product) => {
+        // Если есть изображение WB - используем его
+        if (product.wbData?.imageUrl) {
+            return (
+                <img 
+                    src={product.wbData.imageUrl} 
+                    alt={product.wbData.title || product.ozonData?.name || ''}
+                    style={{ 
+                        maxWidth: '80px', 
+                        maxHeight: '80px',
+                        objectFit: 'contain'
+                    }}
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/80?text=No+Image';
+                    }}
+                />
+            );
+        }
+
+        // Если нет WB, но есть Ozon - используем Ozon
+        if (product.ozonData) {
+            const productId = product.ozonData.product_id;
+            const ozonImageUrl = ozonImages[productId];
+            const isLoading = imageLoading[`ozon_${productId}`];
+
+            if (isLoading) {
+                return (
+                    <div style={{ 
+                        width: '80px', 
+                        height: '80px', 
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <div className="table-spinner"></div>
+                    </div>
+                );
+            }
+
+            if (ozonImageUrl) {
+                return (
+                    <img 
+                        src={ozonImageUrl} 
+                        alt={product.ozonData.name || ''}
+                        style={{ 
+                            maxWidth: '80px', 
+                            maxHeight: '80px',
+                            objectFit: 'contain'
+                        }}
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://via.placeholder.com/80?text=No+Image';
+                        }}
+                    />
+                );
+            }
+
+            return (
+                <div style={{ 
+                    width: '80px', 
+                    height: '80px', 
+                    lineHeight: '80px',
+                    textAlign: 'center',
+                    color: '#999'
+                }}>
+                    Нет фото
+                </div>
+            );
+        }
+
+        // Если нет изображений вообще
+        return (
+            <div style={{ 
+                width: '80px', 
+                height: '80px', 
+                lineHeight: '80px',
+                textAlign: 'center',
+                color: '#999'
+            }}>
+                -
+            </div>
+        );
     };
 
     if (loading) return (
@@ -243,60 +340,11 @@ const ProductTable = () => {
                 <tbody>
                     {filteredProducts.map((product, index) => {
                         const name = product.wbData?.title || product.ozonData?.name || '-';
-                        const productId = product.ozonData?.product_id;
-                        const ozonImageUrl = productId ? ozonImages[productId] : null;
-                        const isLoading = productId ? imageLoading[productId] : false;
-
+                        
                         return (
                             <tr key={index}>
                                 <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
-                                    {product.ozonData ? (
-                                        isLoading ? (
-                                            <div style={{ 
-                                                width: '80px', 
-                                                height: '80px', 
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            }}>
-                                                <div className="table-spinner"></div>
-                                            </div>
-                                        ) : ozonImageUrl ? (
-                                            <img 
-                                                src={ozonImageUrl} 
-                                                alt={name}
-                                                style={{ 
-                                                    maxWidth: '80px', 
-                                                    maxHeight: '80px',
-                                                    objectFit: 'contain'
-                                                }}
-                                                onError={(e) => {
-                                                    e.target.onerror = null;
-                                                    e.target.src = 'https://via.placeholder.com/80?text=No+Image';
-                                                }}
-                                            />
-                                        ) : (
-                                            <div style={{ 
-                                                width: '80px', 
-                                                height: '80px', 
-                                                lineHeight: '80px',
-                                                textAlign: 'center',
-                                                color: '#999'
-                                            }}>
-                                                Нет фото
-                                            </div>
-                                        )
-                                    ) : (
-                                        <div style={{ 
-                                            width: '80px', 
-                                            height: '80px', 
-                                            lineHeight: '80px',
-                                            textAlign: 'center',
-                                            color: '#999'
-                                        }}>
-                                            -
-                                        </div>
-                                    )}
+                                    {renderProductImage(product)}
                                 </td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{product.vendorCode}</td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{name}</td>

@@ -24,6 +24,9 @@ public class WbApiResponse {
         @JsonProperty("title")
         private String title;
 
+        @JsonProperty("photos")
+        private List<Photo> photos;
+
         @JsonProperty("sizes")
         private List<Size> sizes;
 
@@ -31,6 +34,12 @@ public class WbApiResponse {
         public static class Size {
             @JsonProperty("skus")
             private List<String> skus;
+        }
+
+        @Data
+        public static class Photo {
+            @JsonProperty("c246x328")
+            private String imageUrl;
         }
     }
 }

@@ -12,4 +12,5 @@ public class WbProductResponse {
     private String updatedAt;
     private Long nmID;
     private String title;
+    private String imageUrl; // Добавляем поле для URL изображения
 }
