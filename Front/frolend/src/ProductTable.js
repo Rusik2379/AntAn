@@ -12,12 +12,18 @@ const ProductTable = () => {
     const [imageLoading, setImageLoading] = useState({});
     const [searchTerm, setSearchTerm] = useState('');
     const [platformFilter, setPlatformFilter] = useState('all');
+    
+    // Пагинация
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const [totalItems, setTotalItems] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const response = await axios.get('http://localhost:8080/api/products/merged');
                 setProducts(response.data);
+                setTotalItems(response.data.length);
                 applyFilters(response.data, searchTerm, platformFilter);
 
                 const initialImageLoading = {};
@@ -25,14 +31,12 @@ const ProductTable = () => {
                 const initialWbImages = {};
                 
                 response.data.forEach(product => {
-                    // Инициализация для Ozon
                     if (product.ozonData) {
                         const productId = product.ozonData.product_id;
                         initialImageLoading[`ozon_${productId}`] = true;
                         initialOzonImages[productId] = null;
                     }
                     
-                    // Инициализация для WB
                     if (product.wbData) {
                         initialImageLoading[`wb_${product.wbData.nmID}`] = false;
                         if (product.wbData.imageUrl) {
@@ -46,7 +50,7 @@ const ProductTable = () => {
                 setWbImages(initialWbImages);
                 setLoading(false);
 
-                // Загружаем изображения Ozon
+                // Загрузка изображений Ozon
                 const ozonProducts = response.data.filter(p => p.ozonData);
                 for (const product of ozonProducts) {
                     const productId = product.ozonData.product_id;
@@ -89,7 +93,6 @@ const ProductTable = () => {
     const applyFilters = (productsToFilter, searchValue, platform) => {
         let filtered = [...productsToFilter];
         
-        // Применяем поиск
         if (searchValue.trim() !== '') {
             const lowercasedSearch = searchValue.toLowerCase();
             filtered = filtered.filter(product => {
@@ -101,7 +104,6 @@ const ProductTable = () => {
             });
         }
         
-        // Применяем фильтр по платформе
         switch (platform) {
             case 'ozon':
                 filtered = filtered.filter(product => !!product.ozonData);
@@ -114,6 +116,8 @@ const ProductTable = () => {
                 break;
         }
         
+        setTotalItems(filtered.length);
+        setCurrentPage(1);
         setFilteredProducts(filtered);
     };
 
@@ -158,7 +162,6 @@ const ProductTable = () => {
     };
 
     const renderProductImage = (product) => {
-        // Если есть изображение WB - используем его
         if (product.wbData?.imageUrl) {
             return (
                 <img 
@@ -177,7 +180,6 @@ const ProductTable = () => {
             );
         }
 
-        // Если нет WB, но есть Ozon - используем Ozon
         if (product.ozonData) {
             const productId = product.ozonData.product_id;
             const ozonImageUrl = ozonImages[productId];
@@ -228,7 +230,6 @@ const ProductTable = () => {
             );
         }
 
-        // Если нет изображений вообще
         return (
             <div style={{ 
                 width: '80px', 
@@ -242,6 +243,121 @@ const ProductTable = () => {
         );
     };
 
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+    const handleItemsPerPageChange = (e) => {
+        setItemsPerPage(Number(e.target.value));
+        setCurrentPage(1);
+    };
+
+    const renderPaginationInfo = () => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        const currentLastItem = Math.min(indexOfLastItem, totalItems);
+
+        return (
+            <div style={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                gap: '10px',
+                marginRight: '20px'
+            }}>
+                <span>
+                    Показано {indexOfFirstItem + 1}-{currentLastItem} из {totalItems} товаров
+                </span>
+                {searchTerm && (
+                    <span style={{ color: '#666' }}>
+                        (Найдено: {filteredProducts.length})
+                    </span>
+                )}
+            </div>
+        );
+    };
+
+    const renderPagination = () => {
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+
+        if (totalPages <= 1) return null;
+
+        return (
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                gap: '10px',
+                marginBottom: '20px'
+            }}>
+                <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    style={{
+                        padding: '8px 16px',
+                        backgroundColor: currentPage === 1 ? '#f0f0f0' : '#1890ff',
+                        color: currentPage === 1 ? '#666' : 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                    }}
+                >
+                    Назад
+                </button>
+
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                        pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                    } else {
+                        pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                        <button
+                            key={pageNum}
+                            onClick={() => paginate(pageNum)}
+                            style={{
+                                padding: '8px 12px',
+                                backgroundColor: currentPage === pageNum ? '#1890ff' : '#f0f0f0',
+                                color: currentPage === pageNum ? 'white' : 'black',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                minWidth: '36px'
+                            }}
+                        >
+                            {pageNum}
+                        </button>
+                    );
+                })}
+
+                <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    style={{
+                        padding: '8px 16px',
+                        backgroundColor: currentPage === totalPages ? '#f0f0f0' : '#1890ff',
+                        color: currentPage === totalPages ? '#666' : 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                    }}
+                >
+                    Вперед
+                </button>
+
+                <span style={{ marginLeft: '10px' }}>
+                    Страница {currentPage} из {totalPages}
+                </span>
+            </div>
+        );
+    };
+
     if (loading) return (
         <div className="loading-container">
             <div className="loading-spinner"></div>
@@ -251,6 +367,10 @@ const ProductTable = () => {
     
     if (error) return <div>{error}</div>;
 
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+
     return (
         <div style={{ overflowX: 'auto' }}>
             <h2>Товары с Ozon и Wildberries</h2>
@@ -259,73 +379,99 @@ const ProductTable = () => {
                 marginBottom: '20px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '20px'
+                gap: '20px',
+                flexWrap: 'wrap',
+                justifyContent: 'space-between'
             }}>
-                <div>
-                    <input
-                        type="text"
-                        placeholder="Поиск по артикулу или названию..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                            padding: '8px 12px',
-                            width: '300px',
-                            borderRadius: '4px',
-                            border: '1px solid #ddd',
-                            fontSize: '16px'
-                        }}
-                    />
-                    {searchTerm && (
-                        <span style={{ marginLeft: '10px', color: '#666' }}>
-                            Найдено товаров: {filteredProducts.length}
-                        </span>
-                    )}
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                    <div>
+                        <input
+                            type="text"
+                            placeholder="Поиск по артикулу или названию..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                width: '300px',
+                                borderRadius: '4px',
+                                border: '1px solid #ddd',
+                                fontSize: '16px'
+                            }}
+                        />
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                            onClick={() => handlePlatformFilterChange('all')}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: platformFilter === 'all' ? '#1890ff' : '#f0f0f0',
+                                color: platformFilter === 'all' ? 'white' : 'black',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Все
+                        </button>
+                        <button 
+                            onClick={() => handlePlatformFilterChange('ozon')}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: platformFilter === 'ozon' ? '#1890ff' : '#f0f0f0',
+                                color: platformFilter === 'ozon' ? 'white' : 'black',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Ozon
+                        </button>
+                        <button 
+                            onClick={() => handlePlatformFilterChange('wb')}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: platformFilter === 'wb' ? '#1890ff' : '#f0f0f0',
+                                color: platformFilter === 'wb' ? 'white' : 'black',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            WB
+                        </button>
+                    </div>
                 </div>
-                
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button 
-                        onClick={() => handlePlatformFilterChange('all')}
+
+                {renderPaginationInfo()}
+            </div>
+
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '10px'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span>Товаров на странице:</span>
+                    <select 
+                        value={itemsPerPage} 
+                        onChange={handleItemsPerPageChange}
                         style={{
-                            padding: '8px 16px',
-                            backgroundColor: platformFilter === 'all' ? '#1890ff' : '#f0f0f0',
-                            color: platformFilter === 'all' ? 'white' : 'black',
-                            border: '1px solid #ddd',
+                            padding: '8px',
                             borderRadius: '4px',
-                            cursor: 'pointer'
+                            border: '1px solid #ddd'
                         }}
                     >
-                        Все
-                    </button>
-                    <button 
-                        onClick={() => handlePlatformFilterChange('ozon')}
-                        style={{
-                            padding: '8px 16px',
-                            backgroundColor: platformFilter === 'ozon' ? '#1890ff' : '#f0f0f0',
-                            color: platformFilter === 'ozon' ? 'white' : 'black',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Только Ozon
-                    </button>
-                    <button 
-                        onClick={() => handlePlatformFilterChange('wb')}
-                        style={{
-                            padding: '8px 16px',
-                            backgroundColor: platformFilter === 'wb' ? '#1890ff' : '#f0f0f0',
-                            color: platformFilter === 'wb' ? 'white' : 'black',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Только WB
-                    </button>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                    </select>
                 </div>
             </div>
             
-            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '20px' }}>
                 <thead>
                     <tr style={{ backgroundColor: '#f2f2f2' }}>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Изображение</th>
@@ -338,7 +484,7 @@ const ProductTable = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredProducts.map((product, index) => {
+                    {currentItems.map((product, index) => {
                         const name = product.wbData?.title || product.ozonData?.name || '-';
                         
                         return (
@@ -378,6 +524,8 @@ const ProductTable = () => {
                     })}
                 </tbody>
             </table>
+
+            {renderPagination()}
             
             {filteredProducts.length === 0 && (
                 <div style={{ 
