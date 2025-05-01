@@ -9,7 +9,9 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class OzonApiService {
@@ -110,6 +112,37 @@ public class OzonApiService {
                 entity,
                 String.class
         );
+    }
+
+    public ResponseEntity<String> getProductStocks(List<String> offerIds) {
+        HttpHeaders headers = createHeaders();
+
+        try {
+            // Создаем JSON запроса согласно документации Ozon
+            Map<String, Object> requestMap = new HashMap<>();
+            Map<String, Object> filterMap = new HashMap<>();
+            filterMap.put("offer_id", offerIds);
+            filterMap.put("visibility", "ALL");
+
+            requestMap.put("filter", filterMap);
+            requestMap.put("limit", 1000);
+
+            String requestBody = objectMapper.writeValueAsString(requestMap);
+            System.out.println("Sending request to Ozon stocks API: " + requestBody);
+
+            HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+            return restTemplate.exchange(
+                    apiUrl + "/v4/product/info/stocks",
+                    HttpMethod.POST,
+                    entity,
+                    String.class
+            );
+
+        } catch (Exception e) {
+            System.err.println("Error in getProductStocks: " + e.getMessage());
+            throw new RuntimeException("Failed to get product stocks from Ozon", e);
+        }
     }
 
 }

@@ -134,18 +134,18 @@ const ProductTable = () => {
             </div>
             
             <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-                <thead>
-                    <tr style={{ backgroundColor: '#f2f2f2' }}>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Изображение</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Артикул</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Название</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>На Ozon</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>На Wildberries</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Остатки WB</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>ID Ozon</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>ID WB</th>
-                    </tr>
-                </thead>
+            <thead>
+                <tr style={{ backgroundColor: '#f2f2f2' }}>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Изображение</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Артикул</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Название</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>На Ozon</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>На Wildberries</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Остатки WB</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Остатки Ozon</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>ID WB</th>
+                </tr>
+            </thead>
                 <tbody>
                     {filteredProducts.map((product, index) => {
                         const name = product.wbData?.title || product.ozonData?.name || '-';
@@ -224,7 +224,7 @@ const ProductTable = () => {
                                     ) : '-'}
                                 </td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                    {product.ozonData?.product_id || '-'}
+                                    {product.ozonStock > 0 ? `${product.ozonStock} шт.` : '-'}
                                 </td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                     {product.wbData?.nmID || '-'}

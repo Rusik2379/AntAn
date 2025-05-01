@@ -1,19 +1,18 @@
 package com.example.Diplom.controllers;
 
+import com.example.Diplom.DTO.OzonStockResponse;
 import com.example.Diplom.DTO.WbProductResponse;
 import com.example.Diplom.services.OzonApiService;
 import com.example.Diplom.services.WbApiService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 public class ProductController {
@@ -40,61 +39,104 @@ public class ProductController {
     @ResponseBody
     public ResponseEntity<?> getMergedProducts() {
         try {
-            // Получаем товары с обеих платформ
+            // 1. Получаем товары с Ozon
             ResponseEntity<String> ozonResponse = ozonApiService.getProductList();
-            List<WbProductResponse> wbProducts = wbApiService.getProductList();
-
             if (!ozonResponse.getStatusCode().is2xxSuccessful()) {
                 return ResponseEntity.status(ozonResponse.getStatusCode())
-                        .body("Ошибка при запросе к Ozon API");
+                        .body("Ошибка при запросе к Ozon API: " + ozonResponse.getBody());
             }
 
-            // Парсим товары Ozon
-            JsonNode ozonProductsNode = objectMapper.readTree(ozonResponse.getBody()).path("result").path("items");
+            // 2. Получаем товары с Wildberries
+            List<WbProductResponse> wbProducts;
+            try {
+                wbProducts = wbApiService.getProductList();
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Ошибка при получении товаров с Wildberries: " + e.getMessage());
+            }
+
+            // 3. Парсим товары Ozon
             List<Map<String, Object>> ozonProducts = new ArrayList<>();
-            for (JsonNode productNode : ozonProductsNode) {
-                Map<String, Object> product = new HashMap<>();
-                product.put("offer_id", productNode.path("offer_id").asText());
-                product.put("product_id", productNode.path("product_id").asText());
-                product.put("name", productNode.path("name").asText(null)); // используем asText(null) чтобы вернуть null вместо "null"
-                ozonProducts.add(product);
+            List<String> ozonOfferIds = new ArrayList<>();
+            try {
+                JsonNode ozonProductsNode = objectMapper.readTree(ozonResponse.getBody()).path("result").path("items");
+                for (JsonNode productNode : ozonProductsNode) {
+                    Map<String, Object> product = new HashMap<>();
+                    String offerId = productNode.path("offer_id").asText();
+                    product.put("offer_id", offerId);
+                    product.put("product_id", productNode.path("product_id").asText());
+                    product.put("name", productNode.path("name").asText(null));
+                    ozonProducts.add(product);
+                    ozonOfferIds.add(offerId);
+                }
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Ошибка парсинга товаров Ozon: " + e.getMessage());
             }
 
-            // Объединяем товары
+            // 4. Получаем остатки Ozon (только если есть товары)
+            Map<String, Integer> ozonStocks = new HashMap<>();
+            if (!ozonOfferIds.isEmpty()) {
+                try {
+                    ResponseEntity<String> stocksResponse = ozonApiService.getProductStocks(ozonOfferIds);
+                    if (stocksResponse.getStatusCode().is2xxSuccessful()) {
+                        OzonStockResponse stocksData = objectMapper.readValue(stocksResponse.getBody(), OzonStockResponse.class);
+                        if (stocksData.getItems() != null) {
+                            for (OzonStockResponse.Item item : stocksData.getItems()) {
+                                int totalStock = item.getStocks().stream()
+                                        .filter(stock -> "fbs".equals(stock.getType())) // Учитываем только FBS остатки
+                                        .mapToInt(stock -> stock.getPresent() - stock.getReserved())
+                                        .sum();
+                                ozonStocks.put(item.getOffer_id(), totalStock);
+                            }
+                        }
+                    } else {
+                        System.err.println("Ошибка при запросе остатков Ozon: " + stocksResponse.getStatusCode() + " - " + stocksResponse.getBody());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Ошибка при обработке остатков Ozon: " + e.getMessage());
+                    e.printStackTrace();
+                    // Не прерываем выполнение, просто оставляем пустые остатки
+                }
+            }
+
+            // 5. Объединяем товары
             Map<String, Map<String, Object>> mergedProducts = new HashMap<>();
 
             // Добавляем товары Ozon
             for (Map<String, Object> ozonProduct : ozonProducts) {
                 String offerId = (String) ozonProduct.get("offer_id");
-                if (!mergedProducts.containsKey(offerId)) {
-                    Map<String, Object> product = new HashMap<>();
-                    product.put("vendorCode", offerId);
-                    product.put("ozonData", ozonProduct);
-                    product.put("wbData", null);
-                    mergedProducts.put(offerId, product);
-                }
+                Map<String, Object> product = new HashMap<>();
+                product.put("vendorCode", offerId);
+                product.put("ozonData", ozonProduct);
+                product.put("ozonStock", ozonStocks.getOrDefault(offerId, 0));
+                product.put("wbData", null);
+                mergedProducts.put(offerId, product);
             }
 
             // Добавляем товары Wildberries
             for (WbProductResponse wbProduct : wbProducts) {
                 String vendorCode = wbProduct.getVendorCode();
-                if (!mergedProducts.containsKey(vendorCode)) {
+                if (mergedProducts.containsKey(vendorCode)) {
+                    mergedProducts.get(vendorCode).put("wbData", wbProduct);
+                } else {
                     Map<String, Object> product = new HashMap<>();
                     product.put("vendorCode", vendorCode);
                     product.put("ozonData", null);
+                    product.put("ozonStock", 0);
                     product.put("wbData", wbProduct);
                     mergedProducts.put(vendorCode, product);
-                } else {
-                    mergedProducts.get(vendorCode).put("wbData", wbProduct);
                 }
             }
 
-            // Для товаров Ozon без названия (которых нет на WB) получаем описание
+            // 6. Получаем названия для товаров Ozon без названия
             for (Map<String, Object> product : mergedProducts.values()) {
+                @SuppressWarnings("unchecked")
                 Map<String, Object> ozonData = (Map<String, Object>) product.get("ozonData");
                 WbProductResponse wbData = (WbProductResponse) product.get("wbData");
 
-                if (ozonData != null && wbData == null && (ozonData.get("name") == null || ((String)ozonData.get("name")).isEmpty())) {
+                if (ozonData != null && wbData == null &&
+                        (ozonData.get("name") == null || ((String)ozonData.get("name")).isEmpty())) {
                     String productId = (String) ozonData.get("product_id");
                     try {
                         ResponseEntity<String> descriptionResponse = ozonApiService.getProductDescription(productId);
@@ -112,9 +154,11 @@ public class ProductController {
             }
 
             return ResponseEntity.ok(new ArrayList<>(mergedProducts.values()));
+
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.internalServerError()
-                    .body("Внутренняя ошибка сервера: " + e.getMessage());
+                    .body("Внутренняя ошибка сервера: " + e.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
         }
     }
 
