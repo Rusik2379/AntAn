@@ -10,16 +10,15 @@ const ProductTable = () => {
     const [ozonImages, setOzonImages] = useState({});
     const [imageLoading, setImageLoading] = useState({});
     const [searchTerm, setSearchTerm] = useState('');
+    const [platformFilter, setPlatformFilter] = useState('all'); // 'all', 'ozon', 'wb'
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Загружаем список товаров
                 const response = await axios.get('http://localhost:8080/api/products/merged');
                 setProducts(response.data);
-                setFilteredProducts(response.data); // Инициализируем отфильтрованные товары
+                applyFilters(response.data, searchTerm, platformFilter);
 
-                // 2. Инициализируем состояние загрузки изображений
                 const initialImageLoading = {};
                 const initialOzonImages = {};
                 
@@ -34,17 +33,16 @@ const ProductTable = () => {
                 setOzonImages(initialOzonImages);
                 setLoading(false);
 
-                // 3. Загружаем изображения для каждого товара Ozon
                 const ozonProducts = response.data.filter(p => p.ozonData);
                 
-                ozonProducts.forEach(async (product) => {
+                for (const product of ozonProducts) {
                     const productId = product.ozonData.product_id;
                     try {
+                        await new Promise(resolve => setTimeout(resolve, 200));
                         const res = await axios.get(
                             `http://localhost:8080/api/ozon/products/${productId}/pictures`
                         );
                         
-                        // Проверяем разные варианты расположения фото
                         const item = res.data?.items?.[0];
                         const imageUrl = item?.primary_photo?.[0] || 
                                         item?.photo?.[0] || 
@@ -55,8 +53,6 @@ const ProductTable = () => {
                                 ...prev,
                                 [productId]: imageUrl
                             }));
-                        } else {
-                            console.warn(`Нет доступных изображений для товара ${productId}`);
                         }
                     } catch (err) {
                         console.error(`Ошибка загрузки изображения для товара ${productId}:`, err);
@@ -66,7 +62,7 @@ const ProductTable = () => {
                             [productId]: false
                         }));
                     }
-                });
+                }
 
             } catch (err) {
                 setError('Ошибка при загрузке данных: ' + err.message);
@@ -77,26 +73,77 @@ const ProductTable = () => {
         fetchData();
     }, []);
 
-    // Функция для обработки поиска
-    useEffect(() => {
-        if (searchTerm.trim() === '') {
-            setFilteredProducts(products);
-        } else {
-            const lowercasedSearch = searchTerm.toLowerCase();
-            const filtered = products.filter(product => {
-                // Поиск по артикулу (vendorCode)
+    const applyFilters = (productsToFilter, searchValue, platform) => {
+        let filtered = [...productsToFilter];
+        
+        // Применяем поиск
+        if (searchValue.trim() !== '') {
+            const lowercasedSearch = searchValue.toLowerCase();
+            filtered = filtered.filter(product => {
                 const matchesVendorCode = product.vendorCode.toLowerCase().includes(lowercasedSearch);
-                
-                // Поиск по названию товара (из Ozon или WB)
                 const ozonName = product.ozonData?.name?.toLowerCase() || '';
                 const wbTitle = product.wbData?.title?.toLowerCase() || '';
                 const matchesName = ozonName.includes(lowercasedSearch) || wbTitle.includes(lowercasedSearch);
-                
                 return matchesVendorCode || matchesName;
             });
-            setFilteredProducts(filtered);
         }
-    }, [searchTerm, products]);
+        
+        // Применяем фильтр по платформе
+        switch (platform) {
+            case 'ozon':
+                filtered = filtered.filter(product => !!product.ozonData);
+                break;
+            case 'wb':
+                filtered = filtered.filter(product => !!product.wbData);
+                break;
+            case 'all':
+            default:
+                // Без фильтрации
+                break;
+        }
+        
+        setFilteredProducts(filtered);
+    };
+
+    useEffect(() => {
+        applyFilters(products, searchTerm, platformFilter);
+    }, [searchTerm, platformFilter, products]);
+
+    const handlePlatformFilterChange = (platform) => {
+        setPlatformFilter(platform);
+    };
+
+    const renderAvailability = (product) => {
+        const hasOzon = !!product.ozonData;
+        const hasWb = !!product.wbData;
+        
+        if (hasOzon && hasWb) {
+            return <span style={{color: 'green'}}>Ozon + WB</span>;
+        } else if (hasOzon) {
+            return <span style={{color: 'green'}}>Ozon</span>;
+        } else if (hasWb) {
+            return <span style={{color: 'green'}}>WB</span>;
+        } else {
+            return <span style={{color: 'red'}}>Нет в наличии</span>;
+        }
+    };
+
+    const calculateTotalStock = (product) => {
+        let total = 0;
+
+        if (product.ozonStock && !isNaN(product.ozonStock)) {
+            total += parseInt(product.ozonStock);
+        }
+
+        if (product.wbData?.stocks?.length > 0) {
+            product.wbData.stocks.forEach(stock => {
+                const stockValue = parseInt(stock) || 0;
+                total += stockValue;
+            });
+        }
+
+        return total > 0 ? `${total} шт.` : '-';
+    };
 
     if (loading) return (
         <div className="loading-container">
@@ -111,41 +158,88 @@ const ProductTable = () => {
         <div style={{ overflowX: 'auto' }}>
             <h2>Товары с Ozon и Wildberries</h2>
             
-            {/* Добавляем поле поиска */}
-            <div style={{ marginBottom: '20px' }}>
-                <input
-                    type="text"
-                    placeholder="Поиск по артикулу или названию..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                        padding: '8px 12px',
-                        width: '300px',
-                        borderRadius: '4px',
-                        border: '1px solid #ddd',
-                        fontSize: '16px'
-                    }}
-                />
-                {searchTerm && (
-                    <span style={{ marginLeft: '10px', color: '#666' }}>
-                        Найдено товаров: {filteredProducts.length}
-                    </span>
-                )}
+            <div style={{ 
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '20px'
+            }}>
+                <div>
+                    <input
+                        type="text"
+                        placeholder="Поиск по артикулу или названию..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            padding: '8px 12px',
+                            width: '300px',
+                            borderRadius: '4px',
+                            border: '1px solid #ddd',
+                            fontSize: '16px'
+                        }}
+                    />
+                    {searchTerm && (
+                        <span style={{ marginLeft: '10px', color: '#666' }}>
+                            Найдено товаров: {filteredProducts.length}
+                        </span>
+                    )}
+                </div>
+                
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                        onClick={() => handlePlatformFilterChange('all')}
+                        style={{
+                            padding: '8px 16px',
+                            backgroundColor: platformFilter === 'all' ? '#1890ff' : '#f0f0f0',
+                            color: platformFilter === 'all' ? 'white' : 'black',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Все
+                    </button>
+                    <button 
+                        onClick={() => handlePlatformFilterChange('ozon')}
+                        style={{
+                            padding: '8px 16px',
+                            backgroundColor: platformFilter === 'ozon' ? '#1890ff' : '#f0f0f0',
+                            color: platformFilter === 'ozon' ? 'white' : 'black',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Только Ozon
+                    </button>
+                    <button 
+                        onClick={() => handlePlatformFilterChange('wb')}
+                        style={{
+                            padding: '8px 16px',
+                            backgroundColor: platformFilter === 'wb' ? '#1890ff' : '#f0f0f0',
+                            color: platformFilter === 'wb' ? 'white' : 'black',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Только WB
+                    </button>
+                </div>
             </div>
             
             <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead>
-                <tr style={{ backgroundColor: '#f2f2f2' }}>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Изображение</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Артикул</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Название</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>На Ozon</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>На Wildberries</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Остатки WB</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Остатки Ozon</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>ID WB</th>
-                </tr>
-            </thead>
+                <thead>
+                    <tr style={{ backgroundColor: '#f2f2f2' }}>
+                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Изображение</th>
+                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Артикул</th>
+                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Название</th>
+                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Наличие</th>
+                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Остатки WB</th>
+                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Остатки Ozon</th>
+                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Общие остатки</th>
+                    </tr>
+                </thead>
                 <tbody>
                     {filteredProducts.map((product, index) => {
                         const name = product.wbData?.title || product.ozonData?.name || '-';
@@ -155,7 +249,7 @@ const ProductTable = () => {
 
                         return (
                             <tr key={index}>
-                               <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
+                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
                                     {product.ozonData ? (
                                         isLoading ? (
                                             <div style={{ 
@@ -206,11 +300,8 @@ const ProductTable = () => {
                                 </td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{product.vendorCode}</td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{name}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                    {product.ozonData ? 'Есть' : 'Нет'}
-                                </td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                    {product.wbData ? 'Есть' : 'Нет'}
+                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
+                                    {renderAvailability(product)}
                                 </td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                     {product.wbData ? (
@@ -220,14 +311,19 @@ const ProductTable = () => {
                                                     {product.wbData.stocks[i] || 0} шт.
                                                 </div>
                                             ))
-                                        ) : 'Загрузка остатков...'
+                                        ) : 'Загрузка...'
                                     ) : '-'}
                                 </td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                     {product.ozonStock > 0 ? `${product.ozonStock} шт.` : '-'}
                                 </td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                    {product.wbData?.nmID || '-'}
+                                <td style={{ 
+                                    border: '1px solid #ddd', 
+                                    padding: '8px',
+                                    fontWeight: 'bold',
+                                    color: calculateTotalStock(product) === '-' ? 'inherit' : '#1890ff'
+                                }}>
+                                    {calculateTotalStock(product)}
                                 </td>
                             </tr>
                         );
@@ -235,7 +331,7 @@ const ProductTable = () => {
                 </tbody>
             </table>
             
-            {filteredProducts.length === 0 && searchTerm && (
+            {filteredProducts.length === 0 && (
                 <div style={{ 
                     marginTop: '20px', 
                     padding: '20px', 
@@ -244,7 +340,13 @@ const ProductTable = () => {
                     borderRadius: '4px',
                     border: '1px solid #ddd'
                 }}>
-                    Товары не найдены. Попробуйте изменить условия поиска.
+                    {searchTerm 
+                        ? 'Товары не найдены. Попробуйте изменить условия поиска.'
+                        : platformFilter === 'all'
+                            ? 'Нет товаров для отображения'
+                            : platformFilter === 'ozon'
+                                ? 'Нет товаров на Ozon'
+                                : 'Нет товаров на Wildberries'}
                 </div>
             )}
         </div>

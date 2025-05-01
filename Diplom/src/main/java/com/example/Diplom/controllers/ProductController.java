@@ -186,17 +186,34 @@ public class ProductController {
     @ResponseBody
     public ResponseEntity<?> getOzonProductPictures(@PathVariable String productId) {
         try {
+            // Валидация productId
+            if (productId == null || !productId.matches("\\d+")) {
+                return ResponseEntity.badRequest()
+                        .body("Invalid product ID format");
+            }
+
             ResponseEntity<String> response = ozonApiService.getProductPicturesInfo(productId);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
-                return ResponseEntity.status(response.getStatusCode())
-                        .body("Ошибка при запросе изображений товара в Ozon API: " + response.getBody());
+                String errorMsg = "Ошибка при запросе изображений товара в Ozon API: " +
+                        response.getStatusCode() + " - " + response.getBody();
+                System.err.println(errorMsg);
+                return ResponseEntity.status(response.getStatusCode()).body(errorMsg);
+            }
+
+            // Проверяем, есть ли изображения в ответе
+            JsonNode rootNode = objectMapper.readTree(response.getBody());
+            if (!rootNode.has("items") || rootNode.get("items").isEmpty()) {
+                return ResponseEntity.ok().body("{\"message\": \"No images found for this product\"}");
             }
 
             return response;
+
         } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body("Внутренняя ошибка сервера при получении изображений: " + e.getMessage());
+            String errorMsg = "Внутренняя ошибка сервера при получении изображений: " + e.getMessage();
+            System.err.println(errorMsg);
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(errorMsg);
         }
     }
 }

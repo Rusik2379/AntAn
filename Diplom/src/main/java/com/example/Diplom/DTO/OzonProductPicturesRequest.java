@@ -5,5 +5,7 @@ import java.util.List;
 
 @Data
 public class OzonProductPicturesRequest {
-    private List<String> product_id; // Теперь принимаем список ID
+    private List<Long> product_id; // Изменим на Long вместо String
+    private String main_color_image; // Добавим опциональные поля
+    private String color_image;
 }

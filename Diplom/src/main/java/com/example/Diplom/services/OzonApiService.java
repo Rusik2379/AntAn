@@ -55,21 +55,36 @@ public class OzonApiService {
     public ResponseEntity<String> getProductPicturesInfo(String productId) {
         HttpHeaders headers = createHeaders();
 
-        OzonProductPicturesRequest request = new OzonProductPicturesRequest();
-        request.setProduct_id(List.of(productId));
-
         try {
+            OzonProductPicturesRequest request = new OzonProductPicturesRequest();
+            request.setProduct_id(List.of(Long.parseLong(productId))); // Парсим ID как Long
+
             String requestBody = objectMapper.writeValueAsString(request);
+            System.out.println("Request to Ozon pictures API: " + requestBody); // Логируем запрос
+
             HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
 
-            return restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     apiUrl + "/v2/product/pictures/info",
                     HttpMethod.POST,
                     entity,
                     String.class
             );
+
+            System.out.println("Response from Ozon pictures API: " + response.getStatusCode()); // Логируем ответ
+            return response;
+
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid product ID format: " + productId);
+            return ResponseEntity.badRequest().body("Invalid product ID format");
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to create request body", e);
+            System.err.println("Error creating request: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error creating request");
+        } catch (Exception e) {
+            System.err.println("Error getting pictures: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error getting pictures: " + e.getMessage());
         }
     }
 
