@@ -141,7 +141,7 @@ const ProductTable = () => {
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Название</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>На Ozon</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>На Wildberries</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>SKU WB</th>
+                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Остатки WB</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>ID Ozon</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>ID WB</th>
                     </tr>
@@ -213,7 +213,15 @@ const ProductTable = () => {
                                     {product.wbData ? 'Есть' : 'Нет'}
                                 </td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                    {product.wbData?.skus?.join(', ') || '-'}
+                                    {product.wbData ? (
+                                        product.wbData.stocks && product.wbData.skus ? (
+                                            product.wbData.skus.map((sku, i) => (
+                                                <div key={sku}>
+                                                    {product.wbData.stocks[i] || 0} шт.
+                                                </div>
+                                            ))
+                                        ) : 'Загрузка остатков...'
+                                    ) : '-'}
                                 </td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                     {product.ozonData?.product_id || '-'}

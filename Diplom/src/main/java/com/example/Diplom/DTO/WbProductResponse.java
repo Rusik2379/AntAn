@@ -8,6 +8,7 @@ import java.util.List;
 public class WbProductResponse {
     private String vendorCode;
     private List<String> skus;
+    private List<Integer> stocks;
     private String updatedAt;
     private Long nmID;
     private String title;
