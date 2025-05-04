@@ -1,24 +1,29 @@
-import Product from './Product';
-import Header from './Header';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
-
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Header from './components/Header';
+import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
+import Product from './components/Product';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setIsAuthenticated(!!localStorage.getItem('token'));
+  }, []);
+
   return (
     <Router>
       <div className="App">
-          <Header />
-          <Routes>
-              <Route path="/" element={<Product />} />
-              {/* <Route path="/orders" element={<Orders />} />
-              <Route path="/invoices" element={<Invoices />} />
-              <Route path="/salaries" element={<Salaries />} />
-              <Route path="/schedule" element={<Schedule />} /> */}
-          </Routes>
+        {isAuthenticated && <Header />}
+        <Routes>
+          <Route path="/" element={isAuthenticated ? <Navigate to="/products" /> : <LoginPage />} />
+          <Route path="/register" element={isAuthenticated ? <Navigate to="/products" /> : <RegisterPage />} />
+          <Route path="/products" element={isAuthenticated ? <Product /> : <Navigate to="/" />} />
+        </Routes>
       </div>
     </Router>
-);
+  );
 }
 
-export default App;
+export default App; // Add this line to export the component

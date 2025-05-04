@@ -1,0 +1,59 @@
+/* src/components/Header.css */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  header {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .header-item {
+    padding: 15px 0;
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    position: relative;
+    cursor: pointer;
+  }
+  
+  .header-item:hover {
+    color: #1890ff;
+  }
+  
+  .auth-actions {
+    display: flex;
+    align-items: center;
+  }
+  
+  .login-btn, .logout-btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  
+  .login-btn {
+    color: #1890ff;
+    border: 1px solid #1890ff;
+  }
+  
+  .login-btn:hover {
+    background-color: #e6f7ff;
+  }
+  
+  .logout-btn {
+    color: #f5222d;
+    border: 1px solid #ffccc7;
+    background: none;
+    cursor: pointer;
+  }
+  
+  .logout-btn:hover {
+    background-color: #fff2f0;
+  }
