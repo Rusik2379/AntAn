@@ -4,6 +4,7 @@ import Header from './components/Header';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import Product from './components/Product';
+import InvoicesPage from './components/InvoicesPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -20,10 +21,11 @@ function App() {
           <Route path="/" element={isAuthenticated ? <Navigate to="/products" /> : <LoginPage />} />
           <Route path="/register" element={isAuthenticated ? <Navigate to="/products" /> : <RegisterPage />} />
           <Route path="/products" element={isAuthenticated ? <Product /> : <Navigate to="/" />} />
+          <Route path="/invoices" element={isAuthenticated ? <InvoicesPage /> : <Navigate to="/" />} />
         </Routes>
       </div>
     </Router>
   );
 }
 
-export default App; // Add this line to export the component
+export default App;

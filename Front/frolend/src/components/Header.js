@@ -4,11 +4,16 @@ import './Header.css';
 
 const Header = () => {
   const navigate = useNavigate();
+  const token = localStorage.getItem('token');
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/');
   };
+
+  if (!token) { // Используем token вместо isAuthenticated
+    return null;
+  }
 
   return (
     <div className="header-container">

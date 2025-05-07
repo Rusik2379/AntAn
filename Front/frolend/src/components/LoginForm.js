@@ -31,7 +31,14 @@ const LoginForm = () => {
       }
   
       localStorage.setItem('token', response.data.token);
-      navigate('/products'); // Исправлен путь
+
+      // Вызываем колбэк и делаем навигацию
+      if (onLoginSuccess) onLoginSuccess();
+      navigate('/products');
+
+      // Принудительно обновляем страницу
+      window.location.reload();
+      
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Ошибка при входе');
     } finally {
@@ -41,12 +48,12 @@ const LoginForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="auth-form">
-      <h2>Вход в систему</h2>
+      <h2>Авторизация</h2>
       
       {error && <div className="alert alert-danger">{error}</div>}
       
       <div className="form-group">
-        <label>Email</label>
+        <label>Логин</label>
         <input
           type="email"
           value={email}
@@ -68,6 +75,10 @@ const LoginForm = () => {
       <button type="submit" disabled={loading}>
         {loading ? 'Вход...' : 'Войти'}
       </button>
+      
+      <div style={{ marginTop: '15px', textAlign: 'center' }}>
+        Нет аккаунта? <a href="/register" style={{ color: '#1890ff' }}>Регистрация</a>
+      </div>
     </form>
   );
 };

@@ -7,6 +7,11 @@ import './AuthPage.css';
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
 
+  const handleLoginSuccess = () => {
+    // Можно добавить дополнительную логику при успешном входе
+    console.log('Успешный вход');
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-card">
@@ -25,7 +30,10 @@ const AuthPage = () => {
           </button>
         </div>
         
-        {isLogin ? <LoginForm /> : <RegisterForm />}
+        {isLogin ? 
+          <LoginForm onLoginSuccess={handleLoginSuccess} /> : 
+          <RegisterForm />
+        }
       </div>
     </div>
   );
