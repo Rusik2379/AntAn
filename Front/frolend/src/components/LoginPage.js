@@ -19,11 +19,22 @@ const LoginPage = () => {
       const response = await axios.post('http://localhost:8080/login', {
         email,
         password
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
-      localStorage.setItem('token', response.data.token);
-      navigate('/products');
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        // Принудительно обновляем состояние аутентификации
+        window.dispatchEvent(new Event('storage'));
+        navigate('/products');
+      } else {
+        throw new Error('Токен не получен');
+      }
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.response?.data?.message || 'Неверный email или пароль');
     } finally {
       setLoading(false);
