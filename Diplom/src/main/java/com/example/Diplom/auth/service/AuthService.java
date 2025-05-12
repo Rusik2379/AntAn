@@ -37,7 +37,7 @@ public class AuthService {
 
         Company company = null;
         if (registerRequest.getCompanyname() != null && !registerRequest.getCompanyname().trim().isEmpty()) {
-            company = companyRepository.findByName(registerRequest.getCompanyname().trim())  // Изменено
+            company = companyRepository.findByName(registerRequest.getCompanyname().trim())
                     .orElse(new Company(registerRequest.getCompanyname().trim()));
             company = companyRepository.save(company);
         }
@@ -47,8 +47,10 @@ public class AuthService {
                 .lastName(registerRequest.getLastname())
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .companyName(registerRequest.getCompanyname().trim())  // Изменено
+                .companyName(registerRequest.getCompanyname() != null ? registerRequest.getCompanyname().trim() : null)
                 .company(company)
+                .phone(registerRequest.getPhone() != null ? registerRequest.getPhone() : "")
+                .address(registerRequest.getAddress() != null ? registerRequest.getAddress() : "")
                 .role(registerRequest.getCompanyname() == null || registerRequest.getCompanyname().trim().isEmpty()
                         ? ROLE_USER : ROLE_DIRECTOR)
                 .build();
@@ -77,7 +79,11 @@ public class AuthService {
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        String token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(
+                user,
+                user.getId(),
+                user.getCompany() != null ? user.getCompany().getId() : null
+        );
 
         String message = switch (user.getRole()) {
             case ROLE_ADMIN -> "Admin logged in successfully";

@@ -21,7 +21,10 @@ public class SignUpRequest {
     private String lastname;
 
     @NotBlank
-    private String middlename;
+    private String phone;
+
+    @NotBlank
+    private String address;
 
     @NotBlank
     private String companyname;

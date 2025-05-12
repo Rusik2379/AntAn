@@ -15,15 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
-
-
-
-
 @Service
 public class JwtService {
     @Value("${app.secret.key}")
@@ -36,8 +27,23 @@ public class JwtService {
         return extractClaim(token, Claims::getSubject);
     }
 
-    public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+    public Long extractUserId(String token) {
+        final Claims claims = extractAllClaims(token);
+        return claims.get("userId", Long.class);
+    }
+
+    public Long extractCompanyId(String token) {
+        // Убедитесь, что удаляется "Bearer " и лишние пробелы
+        String cleanedToken = token.replace("Bearer", "").trim();
+        final Claims claims = extractAllClaims(cleanedToken);
+        return claims.get("companyId", Long.class);
+    }
+
+    public String generateToken(UserDetails userDetails, Long userId, Long companyId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("companyId", companyId);
+        return generateToken(claims, userDetails);
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
@@ -82,5 +88,4 @@ public class JwtService {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
-
 }
