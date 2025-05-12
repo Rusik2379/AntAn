@@ -1,3 +1,4 @@
+// WbApiService.java (дополненный)
 package com.example.Diplom.services;
 
 import com.example.Diplom.DTO.*;
@@ -21,12 +22,10 @@ public class WbApiService {
     @Value("${wb.warehouse.id}")
     private Integer warehouseId;
 
-    public List<WbProductResponse> getProductList() {
-        RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
+    public List<WbProductResponse> getProductList() {
+        HttpHeaders headers = createHeaders();
 
         WbProductListRequest request = new WbProductListRequest();
         request.getSettings().getFilter().setWithPhoto(-1);
@@ -41,7 +40,7 @@ public class WbApiService {
                 WbApiResponse.class
         );
 
-        List<WbProductResponse> products = convertToResponse(response.getBody());
+        List<WbProductResponse> products = convertToProductResponse(response.getBody());
 
         // Получаем остатки для всех SKU
         Map<String, Integer> stocks = getStocksForSkus(
@@ -62,15 +61,37 @@ public class WbApiService {
         return products;
     }
 
+    public List<WbOrderResponse> getNewOrders() {
+        HttpHeaders headers = createHeaders();
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<WbOrderApiResponse> response = restTemplate.exchange(
+                    "https://marketplace-api.wildberries.ru/api/v3/orders/new",
+                    HttpMethod.GET,
+                    entity,
+                    WbOrderApiResponse.class
+            );
+
+            return convertToOrderResponse(response.getBody());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get new orders from WB API", e);
+        }
+    }
+
+    private HttpHeaders createHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return headers;
+    }
+
     private Map<String, Integer> getStocksForSkus(List<String> skus) {
         if (skus.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpHeaders headers = createHeaders();
 
         WbStocksRequest request = new WbStocksRequest();
         request.setSkus(skus);
@@ -95,7 +116,7 @@ public class WbApiService {
         }
     }
 
-    private List<WbProductResponse> convertToResponse(WbApiResponse apiResponse) {
+    private List<WbProductResponse> convertToProductResponse(WbApiResponse apiResponse) {
         return apiResponse.getCards().stream()
                 .map(card -> {
                     WbProductResponse response = new WbProductResponse();
@@ -114,6 +135,42 @@ public class WbApiService {
                             .flatMap(size -> size.getSkus().stream())
                             .collect(Collectors.toList());
                     response.setSkus(allSkus);
+
+                    return response;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<WbOrderResponse> convertToOrderResponse(WbOrderApiResponse apiResponse) {
+        if (apiResponse == null || apiResponse.getOrders() == null) {
+            return Collections.emptyList();
+        }
+
+        List<WbProductResponse> allProducts = getProductList();
+        Map<Long, WbProductResponse> productMap = allProducts.stream()
+                .collect(Collectors.toMap(WbProductResponse::getNmID, p -> p));
+
+        return apiResponse.getOrders().stream()
+                .map(order -> {
+                    WbOrderResponse response = new WbOrderResponse();
+                    response.setOrderId(order.getId());
+                    response.setCreatedAt(order.getCreatedAt());
+                    response.setSkus(order.getSkus());
+
+                    // Всегда используем convertedPrice, если он есть, иначе price
+                    Integer priceInKopecks = order.getConvertedPrice() != null ?
+                            order.getConvertedPrice() :
+                            order.getPrice();
+
+                    // Конвертируем в рубли
+                    response.setPrice(priceInKopecks != null ? priceInKopecks / 100.0 : null);
+                    response.setNmId(order.getNmId());
+
+                    if (order.getNmId() != null && productMap.containsKey(order.getNmId())) {
+                        WbProductResponse product = productMap.get(order.getNmId());
+                        response.setProductName(product.getTitle());
+                        response.setImageUrl(product.getImageUrl());
+                    }
 
                     return response;
                 })
