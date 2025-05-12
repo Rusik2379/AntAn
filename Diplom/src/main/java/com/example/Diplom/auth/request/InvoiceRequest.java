@@ -5,8 +5,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class InvoiceRequest {
-    private Long companyId;
-    private MultipartFile pdfFile;
+    private MultipartFile file;
     private String fileName;
-    private String fileType;
 }

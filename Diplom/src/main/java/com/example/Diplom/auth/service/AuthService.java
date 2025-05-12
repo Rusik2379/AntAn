@@ -79,7 +79,11 @@ public class AuthService {
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        String token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(
+                user,
+                user.getId(),
+                user.getCompany() != null ? user.getCompany().getId() : null
+        );
 
         String message = switch (user.getRole()) {
             case ROLE_ADMIN -> "Admin logged in successfully";
