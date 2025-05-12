@@ -3,201 +3,238 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './InvoicesPage.css';
 
-const API_BASE_URL = 'http://localhost:8080'; 
-
 const InvoicesPage = () => {
-  const [invoices, setInvoices] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [fileName, setFileName] = useState('');
-  const [companyId, setCompanyId] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+    const [invoices, setInvoices] = useState([]);
+    const [file, setFile] = useState(null);
+    const [fileName, setFileName] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/');
-      return;
-    }
-
-    fetchInvoices();
-  }, [navigate]);
-
-  const fetchInvoices = async () => {
-    try {
-      setIsLoading(true);
-      const response = await axios.get('/api/invoices', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+    // Проверка валидности токена
+    const validateToken = () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            navigate('/login');
+            return false;
         }
-      });
-      setInvoices(response.data);
-    } catch (err) {
-      setError('Ошибка при загрузке накладных');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        return true;
+    };
 
-  const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0]);
-  };
+    // Загрузка списка накладных
+    const loadInvoices = async () => {
+        if (!validateToken()) return;
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    
-    if (!selectedFile || !fileName || !companyId) {
-      setError('Все поля обязательны для заполнения');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('fileName', fileName);
-    formData.append('companyId', companyId);
-
-    try {
-      setIsLoading(true);
-      await axios.post(`${API_BASE_URL}/api/invoices/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+        try {
+            setLoading(true);
+            setError('');
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:8080/api/invoices', {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            setInvoices(response.data);
+        } catch (err) {
+            handleApiError(err);
+        } finally {
+            setLoading(false);
         }
-      });
-      
-      // Обновляем список после загрузки
-      await fetchInvoices();
-      
-      // Сбрасываем форму
-      setSelectedFile(null);
-      setFileName('');
-      setCompanyId('');
-      setError('');
-    } catch (err) {
-      setError('Ошибка при загрузке файла');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  const downloadInvoice = async (id) => {
-    try {
-      const response = await axios.get(`/api/invoices/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        responseType: 'blob'
-      });
+    // Обработка ошибок API
+    const handleApiError = (error) => {
+      console.error('API Error:', error);
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // Получаем имя файла из заголовков ответа
-      const contentDisposition = response.headers['content-disposition'];
-      let filename = 'invoice.pdf';
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1];
-        }
+      if (error.response?.status === 401) {
+          // Токен недействителен или просрочен
+          handleTokenExpired();
+      } else {
+          const errorMessage = error.response?.data?.message || 
+                             (typeof error.response?.data === 'string' ? error.response.data : 'Произошла ошибка');
+          setError(errorMessage);
       }
-      
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      setError('Ошибка при скачивании файла');
-      console.error(err);
-    }
+  };
+  
+  const handleTokenExpired = () => {
+      localStorage.removeItem('token');
+      navigate('/login');
+      alert('Ваша сессия истекла. Пожалуйста, войдите снова.');
   };
 
-  return (
-    <div className="invoices-container">
-      <h2>Накладные</h2>
-      
-      <div className="upload-section">
-        <h3>Загрузить новую накладную</h3>
-        <form onSubmit={handleUpload}>
-          <div className="form-group">
-            <label>Файл PDF:</label>
-            <input 
-              type="file" 
-              accept="application/pdf" 
-              onChange={handleFileChange} 
-              required 
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Название файла:</label>
-            <input
-              type="text"
-              value={fileName}
-              onChange={(e) => setFileName(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>ID компании:</label>
-            <input
-              type="number"
-              value={companyId}
-              onChange={(e) => setCompanyId(e.target.value)}
-              required
-            />
-          </div>
-          
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Загрузка...' : 'Загрузить'}
-          </button>
-          
-          {error && <p className="error-message">{error}</p>}
-        </form>
-      </div>
-      
-      <div className="invoices-list">
-        <h3>Список накладных</h3>
-        {isLoading ? (
-          <p>Загрузка...</p>
-        ) : invoices.length === 0 ? (
-          <p>Накладные отсутствуют</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Название</th>
-                <th>Дата</th>
-                <th>Компания</th>
-                <th>Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td>{invoice.id}</td>
-                  <td>{invoice.fileName}</td>
-                  <td>{new Date(invoice.date).toLocaleDateString()}</td>
-                  <td>{invoice.company?.name || 'Неизвестно'}</td>
-                  <td>
-                    <button onClick={() => downloadInvoice(invoice.id)}>
-                      Скачать
+    // Обработка изменения файла
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (!selectedFile) return;
+
+        if (selectedFile.type !== 'application/pdf') {
+            setError('Только PDF файлы разрешены');
+            return;
+        }
+
+        setFile(selectedFile);
+        if (!fileName) {
+            setFileName(selectedFile.name.replace('.pdf', ''));
+        }
+        setError('');
+    };
+
+    // Загрузка файла на сервер
+    const handleUpload = async (e) => {
+        e.preventDefault();
+        if (!validateToken()) return;
+        
+        if (!file) {
+            setError('Выберите файл');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('fileName', fileName);
+
+        try {
+            setLoading(true);
+            setError('');
+            setSuccess('');
+            
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:8080/api/invoices/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            setSuccess('Накладная успешно загружена');
+            await loadInvoices();
+            setFile(null);
+            setFileName('');
+        } catch (err) {
+            handleApiError(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Скачивание накладной
+    const downloadInvoice = async (id) => {
+        if (!validateToken()) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`http://localhost:8080/api/invoices/${id}`, {
+                headers: { 
+                    'Authorization': `Bearer ${token}` 
+                },
+                responseType: 'blob'
+            });
+            
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // Получаем имя файла из заголовков
+            const contentDisposition = response.headers['content-disposition'];
+            let filename = 'Накладная.pdf';
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename="?(.+)"?/);
+                if (match?.[1]) filename = match[1];
+            }
+            
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            handleApiError(err);
+        }
+    };
+
+    // Загрузка данных при монтировании компонента
+    useEffect(() => {
+        if (validateToken()) {
+            loadInvoices();
+        }
+    }, [navigate]);
+
+    return (
+        <div className="invoices-container">
+            <h2>Накладные</h2>
+            
+            <div className="upload-section">
+                <h3>Загрузить новую накладную</h3>
+                <form onSubmit={handleUpload}>
+                    <div className="form-group">
+                        <label>PDF файл:</label>
+                        <input 
+                            type="file" 
+                            accept="application/pdf"
+                            onChange={handleFileChange}
+                            required
+                            disabled={loading}
+                        />
+                    </div>
+                    
+                    <div className="form-group">
+                        <label>Название файла:</label>
+                        <input
+                            type="text"
+                            value={fileName}
+                            onChange={(e) => setFileName(e.target.value)}
+                            required
+                            disabled={loading}
+                        />
+                    </div>
+                    
+                    <button type="submit" disabled={loading}>
+                        {loading ? 'Загрузка...' : 'Загрузить'}
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
+                    
+                    {error && <div className="error-message">{error}</div>}
+                    {success && <div className="success-message">{success}</div>}
+                </form>
+            </div>
+            
+            <div className="invoices-list">
+                <h3>Список накладных</h3>
+                {loading && invoices.length === 0 ? (
+                    <div className="loading-message">Загрузка...</div>
+                ) : invoices.length === 0 ? (
+                    <div className="empty-message">Нет доступных накладных</div>
+                ) : (
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Дата</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {invoices.map(invoice => (
+                                <tr key={invoice.id}>
+                                    <td>{invoice.fileName}</td>
+                                    <td>{new Date(invoice.date).toLocaleString()}</td>
+                                    <td>
+                                        <button 
+                                            onClick={() => downloadInvoice(invoice.id)}
+                                            disabled={loading}
+                                        >
+                                            Скачать
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default InvoicesPage;

@@ -22,7 +22,7 @@ const LoginPage = () => {
       }, {
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
       });
 
       if (response.data.token) {
