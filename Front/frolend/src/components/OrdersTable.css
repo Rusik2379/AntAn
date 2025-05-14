@@ -1,0 +1,90 @@
+.orders-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .orders-table-wrapper {
+    overflow-x: auto;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+  }
+  
+  .orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+  }
+  
+  .orders-table th {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #e9ecef;
+    position: sticky;
+    top: 0;
+  }
+  
+  .orders-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+  }
+  
+  .orders-table tr:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .order-image {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+  
+  .source-cell {
+    text-transform: capitalize;
+  }
+  
+  .source-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+  }
+  
+  .source-badge.wildberries {
+    background-color: #a53df5;
+    color: white;
+  }
+  
+  .loading {
+    padding: 40px;
+    text-align: center;
+    font-size: 18px;
+    color: #6c757d;
+  }
+  
+  .error {
+    padding: 40px;
+    text-align: center;
+    font-size: 18px;
+    color: #dc3545;
+  }
+  
+  @media (max-width: 768px) {
+    .orders-table th, 
+    .orders-table td {
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+    
+    .order-image {
+      width: 60px;
+      height: 60px;
+    }
+  }

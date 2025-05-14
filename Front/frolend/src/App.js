@@ -4,6 +4,7 @@ import Header from './components/Header';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import ProductTable from './components/ProductTable';
+import OrdersTable from './components/OrdersTable'; // Добавьте этот импорт
 import InvoicesPage from './components/InvoicesPage';
 
 function App() {
@@ -55,7 +56,10 @@ function App() {
             path="/invoices" 
             element={isAuthenticated ? <InvoicesPage /> : <Navigate to="/login" replace />} 
           />
-          {/* Добавьте обработку несуществующих маршрутов */}
+          <Route 
+            path="/orders" 
+            element={isAuthenticated ? <OrdersTable /> : <Navigate to="/login" replace />} 
+          />
           <Route path="*" element={<Navigate to={isAuthenticated ? "/products" : "/login"} replace />} />
         </Routes>
       </div>

@@ -6,6 +6,7 @@ import com.example.Diplom.services.OzonApiService;
 import com.example.Diplom.services.WbApiService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +14,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+@CrossOrigin(origins = "*")
+@Slf4j
 @Controller
 public class ProductController {
 
@@ -214,6 +218,64 @@ public class ProductController {
             System.err.println(errorMsg);
             e.printStackTrace();
             return ResponseEntity.internalServerError().body(errorMsg);
+        }
+    }
+
+    @CrossOrigin(origins = "http://localhost:3000", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS})
+    @PostMapping("/api/orders/merged") // Измените с @GetMapping на @PostMapping
+    @ResponseBody
+    public ResponseEntity<?> getMergedOrders(@RequestBody(required = false) Map<String, Object> requestBody) {
+        try {
+            List<Map<String, Object>> wbOrders = getWbOrders();
+            List<Map<String, Object>> ozonOrders = getOzonOrders();
+
+            List<Map<String, Object>> mergedOrders = new ArrayList<>();
+            mergedOrders.addAll(wbOrders);
+            mergedOrders.addAll(ozonOrders);
+
+            mergedOrders.sort(Comparator.comparing(
+                    order -> (String) order.get("createdAt"),
+                    Comparator.reverseOrder()
+            ));
+
+            return ResponseEntity.ok(mergedOrders);
+        } catch (Exception e) {
+            log.error("Error merging orders", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "error", "Ошибка при объединении заказов",
+                            "message", e.getMessage()
+                    ));
+        }
+    }
+
+    private List<Map<String, Object>> getWbOrders() {
+        try {
+            return wbApiService.getNewOrders().stream()
+                    .map(order -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("source", "wildberries");
+                        map.put("orderId", order.getOrderId());
+                        map.put("createdAt", order.getCreatedAt());
+                        map.put("productName", order.getProductName());
+                        map.put("quantity", 1);
+                        map.put("price", order.getPrice());
+                        map.put("imageUrl", order.getImageUrl());
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Failed to get WB orders", e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<Map<String, Object>> getOzonOrders() {
+        try {
+            return ozonApiService.getNewOrders();
+        } catch (Exception e) {
+            log.error("Failed to get Ozon orders", e);
+            return Collections.emptyList();
         }
     }
 }
