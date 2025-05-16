@@ -10,6 +10,21 @@ public class WbApiResponse {
     @JsonProperty("cards")
     private List<WbProductCard> cards;
 
+    @JsonProperty("cursor")
+    private Cursor cursor; // Добавлено для пагинации
+
+    @Data
+    public static class Cursor {
+        @JsonProperty("updatedAt")
+        private String updatedAt;
+
+        @JsonProperty("nmID")
+        private Long nmID;
+
+        @JsonProperty("total")
+        private Integer total; // Добавлено для проверки последней партии
+    }
+
     @Data
     public static class WbProductCard {
         @JsonProperty("vendorCode")

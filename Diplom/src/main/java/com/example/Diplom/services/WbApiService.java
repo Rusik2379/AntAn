@@ -25,32 +25,45 @@ public class WbApiService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     public List<WbProductResponse> getProductList() {
-        HttpHeaders headers = createHeaders();
+        List<WbProductResponse> allProducts = new ArrayList<>();
+        WbApiResponse.Cursor nextCursor = null;
+        int totalProcessed = 0;
 
-        WbProductListRequest request = new WbProductListRequest();
-        request.getSettings().getFilter().setWithPhoto(-1);
-        request.getSettings().getCursor().setLimit(99);
+        do {
+            HttpHeaders headers = createHeaders();
+            WbProductListRequest request = createRequest(nextCursor);
 
-        HttpEntity<WbProductListRequest> entity = new HttpEntity<>(request, headers);
+            HttpEntity<WbProductListRequest> entity = new HttpEntity<>(request, headers);
 
-        ResponseEntity<WbApiResponse> response = restTemplate.exchange(
-                apiUrl + "/content/v2/get/cards/list",
-                HttpMethod.POST,
-                entity,
-                WbApiResponse.class
-        );
+            ResponseEntity<WbApiResponse> response = restTemplate.exchange(
+                    apiUrl + "/content/v2/get/cards/list",
+                    HttpMethod.POST,
+                    entity,
+                    WbApiResponse.class
+            );
 
-        List<WbProductResponse> products = convertToProductResponse(response.getBody());
+            if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+                throw new RuntimeException("Failed to get products from WB API. Status: " + response.getStatusCode());
+            }
+
+            WbApiResponse apiResponse = response.getBody();
+            List<WbProductResponse> batchProducts = convertToProductResponse(apiResponse);
+            allProducts.addAll(batchProducts);
+
+            totalProcessed += batchProducts.size();
+            nextCursor = apiResponse.getCursor();
+
+        } while (nextCursor != null && !isLastBatch(nextCursor));
 
         // Получаем остатки для всех SKU
         Map<String, Integer> stocks = getStocksForSkus(
-                products.stream()
+                allProducts.stream()
                         .flatMap(p -> p.getSkus().stream())
                         .collect(Collectors.toList())
         );
 
         // Устанавливаем остатки для каждого продукта
-        products.forEach(product -> {
+        allProducts.forEach(product -> {
             product.setStocks(
                     product.getSkus().stream()
                             .map(sku -> stocks.getOrDefault(sku, 0))
@@ -58,7 +71,25 @@ public class WbApiService {
             );
         });
 
-        return products;
+        return allProducts;
+    }
+
+    private WbProductListRequest createRequest(WbApiResponse.Cursor cursor) {
+        WbProductListRequest request = new WbProductListRequest();
+        request.getSettings().getFilter().setWithPhoto(-1);
+        request.getSettings().getCursor().setLimit(100); // Максимальный лимит
+
+        if (cursor != null) {
+            request.getSettings().getCursor().setUpdatedAt(cursor.getUpdatedAt());
+            request.getSettings().getCursor().setNmID(cursor.getNmID());
+        }
+
+        return request;
+    }
+
+    private boolean isLastBatch(WbApiResponse.Cursor cursor) {
+        // Если cursor.total меньше чем наш лимит (100), значит это последняя партия
+        return cursor.getTotal() != null && cursor.getTotal() < 100;
     }
 
     public List<WbOrderResponse> getNewOrders() {

@@ -15,6 +15,8 @@ public class WbProductListRequest {
     @Data
     public static class Cursor {
         private Integer limit;
+        private String updatedAt; // Добавлено для пагинации
+        private Long nmID;       // Добавлено для пагинации
     }
 
     @Data
