@@ -1,5 +1,8 @@
 package com.example.Diplom.models;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,9 +23,11 @@ public class Invoice {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
+    @JsonIgnore // Исключаем рекурсивную сериализацию компании
     private Company company;
 
     @Column(name = "date")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime date;
 
     @Column(name = "file_name")
@@ -30,6 +35,7 @@ public class Invoice {
 
     @Lob
     @Column(name = "pdf_file", columnDefinition = "LONGBLOB")
+    @JsonIgnore // Исключаем большие бинарные данные из сериализации
     private byte[] pdfFile;
 
     @Column(name = "file_type")

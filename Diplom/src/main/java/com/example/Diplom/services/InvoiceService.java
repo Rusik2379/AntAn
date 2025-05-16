@@ -47,7 +47,7 @@ public class InvoiceService {
         Invoice invoice = new Invoice();
         invoice.setCompany(company);
         invoice.setDate(LocalDateTime.now());
-        invoice.setFileName(fileName);
+        invoice.setFileName(fileName != null ? fileName : file.getOriginalFilename());
         invoice.setPdfFile(file.getBytes());
         invoice.setFileType(file.getContentType());
 

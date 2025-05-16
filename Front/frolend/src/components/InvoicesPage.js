@@ -216,10 +216,12 @@ const InvoicesPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {invoices.map(invoice => (
+                        {invoices.map(invoice => {
+                            console.log('Invoice data:', invoice); // Для отладки
+                            return (
                                 <tr key={invoice.id}>
-                                    <td>{invoice.fileName}</td>
-                                    <td>{new Date(invoice.date).toLocaleString()}</td>
+                                    <td>{invoice.fileName || 'Без названия'}</td>
+                                    <td>{invoice.date ? new Date(invoice.date).toLocaleString() : 'Дата не указана'}</td>
                                     <td>
                                         <button 
                                             onClick={() => downloadInvoice(invoice.id)}
@@ -229,7 +231,8 @@ const InvoicesPage = () => {
                                         </button>
                                     </td>
                                 </tr>
-                            ))}
+                            );
+                        })}
                         </tbody>
                     </table>
                 )}
