@@ -1,4 +1,3 @@
-// src/components/RegisterForm.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -12,16 +11,18 @@ const RegisterForm = () => {
     lastname: '',
     phone: '',
     address: '',
-    companyname: ''
+    companyname: '',
+    isDirector: false
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: type === 'checkbox' ? checked : value
     });
   };
 
@@ -30,8 +31,14 @@ const RegisterForm = () => {
     setLoading(true);
     setError('');
 
+    // If user is not director, clear companyname
+    const dataToSend = {
+      ...formData,
+      companyname: formData.isDirector ? formData.companyname : null
+    };
+
     try {
-      const response = await axios.post('http://localhost:8080/registration', formData, {
+      const response = await axios.post('http://localhost:8080/registration', dataToSend, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -120,16 +127,30 @@ const RegisterForm = () => {
         />
       </div>
       
-      <div className="form-group">
-        <label>Название компании</label>
-        <input
-          type="text"
-          name="companyname"
-          value={formData.companyname}
-          onChange={handleChange}
-          required
-        />
+      <div className="form-group checkbox-group">
+        <label>
+          <input
+            type="checkbox"
+            name="isDirector"
+            checked={formData.isDirector}
+            onChange={handleChange}
+          />
+          Я директор
+        </label>
       </div>
+      
+      {formData.isDirector && (
+        <div className="form-group">
+          <label>Название компании</label>
+          <input
+            type="text"
+            name="companyname"
+            value={formData.companyname}
+            onChange={handleChange}
+            required={formData.isDirector}
+          />
+        </div>
+      )}
       
       <button type="submit" disabled={loading}>
         {loading ? 'Регистрация...' : 'Зарегистрироваться'}

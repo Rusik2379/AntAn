@@ -5,9 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-
 public class SignUpRequest {
-
     @Email
     private String email;
 
@@ -26,7 +24,7 @@ public class SignUpRequest {
     @NotBlank
     private String address;
 
-    @NotBlank
     private String companyname;
 
+    private boolean isDirector; // New field
 }

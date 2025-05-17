@@ -36,9 +36,13 @@ public class AuthService {
         }
 
         Company company = null;
-        if (registerRequest.getCompanyname() != null && !registerRequest.getCompanyname().trim().isEmpty()) {
-            company = companyRepository.findByName(registerRequest.getCompanyname().trim())
-                    .orElse(new Company(registerRequest.getCompanyname().trim()));
+        String companyName = registerRequest.getCompanyname() != null ?
+                registerRequest.getCompanyname().trim() : null;
+
+        // Only create company if user is director and company name is provided
+        if (registerRequest.isDirector() && companyName != null && !companyName.isEmpty()) {
+            company = companyRepository.findByName(companyName)
+                    .orElse(new Company(companyName));
             company = companyRepository.save(company);
         }
 
@@ -47,12 +51,12 @@ public class AuthService {
                 .lastName(registerRequest.getLastname())
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .companyName(registerRequest.getCompanyname() != null ? registerRequest.getCompanyname().trim() : null)
+                .companyName(companyName)
                 .company(company)
                 .phone(registerRequest.getPhone() != null ? registerRequest.getPhone() : "")
                 .address(registerRequest.getAddress() != null ? registerRequest.getAddress() : "")
-                .role(registerRequest.getCompanyname() == null || registerRequest.getCompanyname().trim().isEmpty()
-                        ? ROLE_USER : ROLE_DIRECTOR)
+                .role(registerRequest.isDirector() && companyName != null && !companyName.isEmpty()
+                        ? ROLE_DIRECTOR : ROLE_USER)
                 .build();
 
         userRepository.save(user);
