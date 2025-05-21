@@ -1,14 +1,24 @@
+// src/components/LoginForm.js
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './AuthPage.css';
+import './AuthForms.css';
 
-const LoginPage = () => {
-  const [email, setEmail] = useState('admin@example.com');
-  const [password, setPassword] = useState('admin');
+const LoginForm = ({ onLoginSuccess }) => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,70 +26,67 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:8080/login', {
-        email,
-        password
-      }, {
+      const response = await axios.post('http://localhost:8080/login', formData, {
         headers: {
           'Content-Type': 'application/json'
-        },
+        }
       });
-
+      
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
-        // Принудительно обновляем состояние аутентификации
-        window.dispatchEvent(new Event('storage'));
-        navigate('/products');
-      } else {
-        throw new Error('Токен не получен');
+        localStorage.setItem('role', response.data.role); // Store user role
+        onLoginSuccess?.();
+        
+        // Redirect based on role
+        if (response.data.role === 'ROLE_DIRECTOR') {
+          navigate('/products');
+        } else {
+          navigate('/userinvoice'); // Default route for regular users
+        }
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Неверный email или пароль');
+      setError(err.response?.data?.message || 
+               err.message || 
+               'Ошибка при входе');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2>Вход в систему</h2>
-        
-        {error && <div className="alert alert-danger">{error}</div>}
-        
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Пароль</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          
-          <button type="submit" disabled={loading} className="auth-button">
-            {loading ? 'Вход...' : 'Войти'}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
-        </div>
+    <form onSubmit={handleSubmit} className="auth-form">
+      <h2>Вход</h2>
+      
+      {error && <div className="alert alert-danger">{error}</div>}
+      
+      <div className="form-group">
+        <label>Email</label>
+        <input
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
       </div>
-    </div>
+      
+      <div className="form-group">
+        <label>Пароль</label>
+        <input
+          type="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+        />
+      </div>
+      
+      <button type="submit" disabled={loading}>
+        {loading ? 'Вход...' : 'Войти'}
+      </button>
+    </form>
   );
 };
 
-export default LoginPage;
+export default LoginForm;

@@ -1,20 +1,36 @@
+// src/components/Header.js
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Header.css';
 
 const Header = () => {
   const navigate = useNavigate();
+  const role = localStorage.getItem('role');
 
   const handleLogout = () => {
-    // Удаляем токен
     localStorage.removeItem('token');
-    
-    // Отправляем событие о изменении localStorage
+    localStorage.removeItem('role');
     window.dispatchEvent(new Event('storage'));
-    
-    // Перенаправляем на страницу входа
     navigate('/login');
   };
+
+  if (role === 'ROLE_USER') {
+    return (
+      <div className="header-container">
+        <header>
+          <Link to="/userinvoice">
+            <span className="header-item">Зарплата</span>
+          </Link>
+          <Link to="/userschedule">
+            <span className="header-item">Расписание</span>
+          </Link>
+        </header>
+        <button className="logout-btn" onClick={handleLogout}>
+          Выйти
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="header-container">
@@ -35,11 +51,7 @@ const Header = () => {
           <span className="header-item">Расписание</span>
         </Link>
       </header>
-      
-      <button 
-        className="logout-btn"
-        onClick={handleLogout}
-      >
+      <button className="logout-btn" onClick={handleLogout}>
         Выйти
       </button>
     </div>

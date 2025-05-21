@@ -1,0 +1,146 @@
+/* src/components/UserInvoicePage.css */
+.user-invoice-page {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 20px;
+  font-size: 18px;
+}
+
+.error {
+  color: red;
+}
+
+.salary-list {
+  margin-top: 20px;
+}
+
+.salary-item {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.salary-info p {
+  margin: 5px 0;
+}
+
+.pay-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.pay-button:hover {
+  background-color: #45a049;
+}
+
+.shift-form {
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.shift-form button {
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.shift-form button:hover {
+  background-color: #218838;
+}
+
+.salary-table {
+
+width: 100%;
+
+border-collapse: collapse;
+
+margin: 20px 0;
+
+}
+
+.salary-table th,
+
+.salary-table td {
+
+border: 1px solid #ccc;
+
+padding: 10px;
+
+text-align: left;
+
+}
+
+.salary-table th {
+
+background-color: #f4f4f4;
+
+}
+
+.claim-button {
+
+padding: 10px 20px;
+
+background-color: #007bff;
+
+color: white;
+
+border: none;
+
+border-radius: 4px;
+
+cursor: pointer;
+
+margin-top: 10px;
+
+}
+
+.claim-button:hover {
+
+background-color: #0056b3;
+
+}
+
+.total-row {
+  font-weight: bold;
+  background-color: #f8f9fa;
+}
+
+.salary-table tfoot td {
+  padding: 10px;
+  border: 1px solid #ccc;
+}

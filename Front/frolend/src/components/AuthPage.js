@@ -1,42 +1,42 @@
-// src/components/AuthPage.js
-import React, { useState } from 'react';
-import LoginForm from './LoginForm';
-import RegisterForm from './RegisterForm';
-import './AuthPage.css';
+// // src/components/AuthPage.js
+// import React, { useState } from 'react';
+// import LoginForm from './LoginForm';
+// import RegisterForm from './RegisterForm';
+// import './AuthPage.css';
 
-const AuthPage = () => {
-  const [isLogin, setIsLogin] = useState(true);
+// const AuthPage = () => {
+//   const [isLogin, setIsLogin] = useState(true);
 
-  const handleLoginSuccess = () => {
-    // Можно добавить дополнительную логику при успешном входе
-    console.log('Успешный вход');
-  };
+//   const handleLoginSuccess = () => {
+//     // Можно добавить дополнительную логику при успешном входе
+//     console.log('Успешный вход');
+//   };
 
-  return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-tabs">
-          <button 
-            className={`tab ${isLogin ? 'active' : ''}`}
-            onClick={() => setIsLogin(true)}
-          >
-            Вход
-          </button>
-          <button 
-            className={`tab ${!isLogin ? 'active' : ''}`}
-            onClick={() => setIsLogin(false)}
-          >
-            Регистрация
-          </button>
-        </div>
+//   return (
+//     <div className="auth-container">
+//       <div className="auth-card">
+//         <div className="auth-tabs">
+//           <button 
+//             className={`tab ${isLogin ? 'active' : ''}`}
+//             onClick={() => setIsLogin(true)}
+//           >
+//             Вход
+//           </button>
+//           <button 
+//             className={`tab ${!isLogin ? 'active' : ''}`}
+//             onClick={() => setIsLogin(false)}
+//           >
+//             Регистрация
+//           </button>
+//         </div>
         
-        {isLogin ? 
-          <LoginForm onLoginSuccess={handleLoginSuccess} /> : 
-          <RegisterForm />
-        }
-      </div>
-    </div>
-  );
-};
+//         {isLogin ? 
+//           <LoginForm onLoginSuccess={handleLoginSuccess} /> : 
+//           <RegisterForm />
+//         }
+//       </div>
+//     </div>
+//   );
+// };
 
-export default AuthPage;
+// export default AuthPage;
