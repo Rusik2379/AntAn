@@ -8,7 +8,7 @@ import ProductTable from './components/ProductTable';
 import OrdersTable from './components/OrdersTable';
 import InvoicesPage from './components/InvoicesPage';
 import UserInvoicePage from './components/UserInvoicePage.js'; // Create this component
-import UserSchedulePage from './components/UserSchedulePage'; // Create this component
+import UserSchedulePage from './components/SchedulePage'; // Create this component
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

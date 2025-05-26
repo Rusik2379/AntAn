@@ -2,7 +2,7 @@ package com.example.Diplom.controllers;
 
 import com.example.Diplom.models.Salery;
 import com.example.Diplom.auth.request.ShiftRequest;
-import com.example.Diplom.services.SaleryService;
+import com.example.Diplom.services.SalaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +16,13 @@ import java.util.List;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class SaleryController {
-    private final SaleryService saleryService;
+    private final SalaryService saleryService;
+    private final SalaryService salaryService;
 
     @GetMapping
     public ResponseEntity<List<Salery>> getUserSalaries(@RequestHeader("Authorization") String token) {
         try {
-            return ResponseEntity.ok(saleryService.getUserSalaries(token));
+            return ResponseEntity.ok(salaryService.getUserSalaries(token));
         } catch (RuntimeException e) {
             if (e.getMessage().equals("User not found")) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
