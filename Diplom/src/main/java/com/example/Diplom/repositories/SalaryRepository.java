@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface SaleryRepository extends JpaRepository<Salery, Long> {
+public interface SalaryRepository extends JpaRepository<Salery, Long> {
     List<Salery> findByUserAndPaid(User user, String paid);
     List<Salery> findByUser(User user);
 }

@@ -1,0 +1,133 @@
+.salary-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: 'Arial', sans-serif;
+}
+
+.loading-spinner {
+    padding: 40px;
+    text-align: center;
+    font-size: 18px;
+    color: #1890ff;
+}
+
+.error-message {
+    padding: 20px;
+    background-color: #fff1f0;
+    border: 1px solid #ffccc7;
+    color: #f5222d;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    margin-top: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.salary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    background-color: white;
+}
+
+.salary-table th {
+    background-color: #fafafa;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 500;
+    color: #333;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.salary-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.salary-table tr:last-child td {
+    border-bottom: none;
+}
+
+.salary-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+.paid-row {
+    background-color: #f6ffed;
+}
+
+.unpaid-row {
+    background-color: #fffbe6;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.paid {
+    background-color: #f6ffed;
+    border: 1px solid #b7eb8f;
+    color: #52c41a;
+}
+
+.status-badge.unpaid {
+    background-color: #fff1f0;
+    border: 1px solid #ffa39e;
+    color: #f5222d;
+}
+
+.pay-btn, .claim-all-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.pay-btn {
+    background-color: #1890ff;
+    color: white;
+}
+
+.pay-btn:hover {
+    background-color: #40a9ff;
+}
+
+.claim-all-btn {
+    background-color: #52c41a;
+    color: white;
+    padding: 8px 16px;
+    margin-bottom: 15px;
+}
+
+.claim-all-btn:hover {
+    background-color: #73d13d;
+}
+
+.no-data {
+    text-align: center;
+    padding: 20px;
+    color: #888;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .salary-table {
+        font-size: 12px;
+    }
+    
+    .salary-table th, 
+    .salary-table td {
+        padding: 8px 10px;
+    }
+}

@@ -3,7 +3,8 @@ package com.example.Diplom.services;
 import com.example.Diplom.models.Salery;
 import com.example.Diplom.auth.request.ShiftRequest;
 import com.example.Diplom.models.User;
-import com.example.Diplom.repositories.SaleryRepository;
+import com.example.Diplom.models.enums.Role;
+import com.example.Diplom.repositories.SalaryRepository;
 import com.example.Diplom.repositories.UserRepository;
 import com.example.Diplom.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class SalaryService {
-    private final SaleryRepository salaryRepository;
+    private final SalaryRepository salaryRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
 
@@ -39,6 +40,30 @@ public class SalaryService {
         } catch (Exception e) {
             log.error("Error fetching salaries: {}", e.getMessage());
             throw new RuntimeException("Authentication failed", e);
+        }
+    }
+
+    public List<Salery> getAllSalaries(String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "").trim();
+            String email = jwtService.extractUsername(token);
+
+            if (email == null) {
+                throw new RuntimeException("Invalid token");
+            }
+
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (!(user.getRole().equals(Role.ROLE_ADMIN) || user.getRole().equals(Role.ROLE_DIRECTOR))) {
+                throw new RuntimeException("Unauthorized access");
+            }
+
+            return salaryRepository.findAll();
+
+        } catch (Exception e) {
+            log.error("Error fetching all salaries: {}", e.getMessage());
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
 

@@ -7,8 +7,9 @@ import RegisterPage from './components/RegisterPage';
 import ProductTable from './components/ProductTable';
 import OrdersTable from './components/OrdersTable';
 import InvoicesPage from './components/InvoicesPage';
-import UserInvoicePage from './components/UserInvoicePage.js'; // Create this component
-import UserSchedulePage from './components/SchedulePage'; // Create this component
+import UserInvoicePage from './components/UserInvoicePage';
+import UserSchedulePage from './components/SchedulePage';
+import SalaryTable from './components/SalaryTable';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -74,6 +75,10 @@ function App() {
               <Route 
                 path="/orders" 
                 element={isAuthenticated ? <OrdersTable /> : <Navigate to="/login" replace />} 
+              />
+              <Route 
+                path="/salary" 
+                element={isAuthenticated ? <SalaryTable /> : <Navigate to="/login" replace />} 
               />
             </>
           )}

@@ -44,7 +44,7 @@ const Header = () => {
         <Link to="/invoices">
           <span className="header-item">Накладные</span>
         </Link>
-        <Link to="/salaries">
+        <Link to="/salary">
           <span className="header-item">Зарплаты</span>
         </Link>
         <Link to="/schedule">

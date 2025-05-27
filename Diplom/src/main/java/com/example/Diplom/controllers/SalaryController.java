@@ -15,9 +15,8 @@ import java.util.List;
 @RequestMapping("/api/salaries")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
-public class SaleryController {
-    private final SalaryService saleryService;
-    private final SalaryService salaryService;
+public class SalaryController {
+    private final SalaryService salaryService; // Исправлено: только один сервис
 
     @GetMapping
     public ResponseEntity<List<Salery>> getUserSalaries(@RequestHeader("Authorization") String token) {
@@ -31,12 +30,26 @@ public class SaleryController {
         }
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<Salery>> getAllSalaries(@RequestHeader("Authorization") String token) {
+        try {
+            return ResponseEntity.ok(salaryService.getAllSalaries(token));
+        } catch (RuntimeException e) {
+            if (e.getMessage().equals("User not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+            } else if (e.getMessage().equals("Unauthorized access")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Collections.emptyList());
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
+        }
+    }
+
     @PatchMapping("/{id}/pay")
     public ResponseEntity<Salery> markSalaryAsPaid(
             @PathVariable Long id,
             @RequestHeader("Authorization") String token) {
         try {
-            return ResponseEntity.ok(saleryService.markSalaryAsPaid(id, token));
+            return ResponseEntity.ok(salaryService.markSalaryAsPaid(id, token));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
@@ -47,7 +60,7 @@ public class SaleryController {
             @RequestBody ShiftRequest shiftRequest,
             @RequestHeader("Authorization") String token) {
         try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(saleryService.addShift(shiftRequest, token));
+            return ResponseEntity.status(HttpStatus.CREATED).body(salaryService.addShift(shiftRequest, token));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
@@ -56,7 +69,7 @@ public class SaleryController {
     @PostMapping("/claim-all")
     public ResponseEntity<Void> claimAllSalaries(@RequestHeader("Authorization") String token) {
         try {
-            saleryService.claimAllSalaries(token);
+            salaryService.claimAllSalaries(token);
             return ResponseEntity.ok().build();
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
