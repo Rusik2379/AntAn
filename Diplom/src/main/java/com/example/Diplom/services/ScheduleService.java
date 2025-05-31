@@ -16,6 +16,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -183,5 +184,21 @@ public class ScheduleService {
                 .workers(List.copyOf(workDay.getWorkers()))
                 .isFull(workDay.isFull())
                 .build();
+    }
+
+
+
+    @Transactional
+    public List<WorkDayDTO> getAllSchedule(Long companyId) {
+        List<WorkDay> workDays;
+        if (companyId != null) {
+            workDays = workDayRepository.findAllByWorkWeekCompanyIdOrderByDate(companyId);
+        } else {
+            workDays = workDayRepository.findAllByOrderByDate();
+        }
+
+        return workDays.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 }

@@ -178,4 +178,27 @@ public class ScheduleController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
+
+
+    @GetMapping("/all-schedule")
+    public ResponseEntity<List<WorkDayDTO>> getAllSchedule(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "").trim();
+            String username = jwtService.extractUsername(token);
+            if (username == null || !jwtService.isTokenValid(token, jwtService.loadUserByUsername(username))) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            Long companyId = jwtService.extractCompanyId(token);
+
+            List<WorkDayDTO> allSchedule = scheduleService.getAllSchedule(companyId);
+            return ResponseEntity.ok(allSchedule);
+        } catch (JwtException e) {
+            log.error("Invalid JWT token: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception e) {
+            log.error("Error processing all schedule request", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

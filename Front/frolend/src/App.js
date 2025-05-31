@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
@@ -10,6 +9,7 @@ import InvoicesPage from './components/InvoicesPage';
 import UserInvoicePage from './components/UserInvoicePage';
 import UserSchedulePage from './components/SchedulePage';
 import SalaryTable from './components/SalaryTable';
+import ScheduleTable from './components/ScheduleTable'; // Добавляем импорт ScheduleTable
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -79,6 +79,10 @@ function App() {
               <Route 
                 path="/salary" 
                 element={isAuthenticated ? <SalaryTable /> : <Navigate to="/login" replace />} 
+              />
+              <Route 
+                path="/schedule" 
+                element={isAuthenticated ? <ScheduleTable /> : <Navigate to="/login" replace />} 
               />
             </>
           )}
