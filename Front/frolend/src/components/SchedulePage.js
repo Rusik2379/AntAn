@@ -21,27 +21,23 @@ const SchedulePage = () => {
       setLoading(true);
       setError(null);
       
-      // Получаем токен из localStorage
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Требуется авторизация');
       }
 
-      // Конфиг для запросов с авторизацией
       const config = {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       };
 
-      // Загрузка текущего пользователя
       const userId = localStorage.getItem('userId');
       if (userId) {
         const userResponse = await axios.get(`http://localhost:8080/api/user/${userId}`, config);
         setCurrentUser(userResponse.data);
       }
 
-      // Загрузка расписания
       const scheduleResponse = await axios.get('http://localhost:8080/api/schedule', {
         ...config,
         params: { date: weekStart.toISOString().split('T')[0] }
@@ -58,7 +54,7 @@ const SchedulePage = () => {
     fetchData();
   }, [weekStart]);
 
-  const handleAssign = async (dayIndex) => {
+  const handleAssign = async (dayIndex, slotIndex) => {
     try {
       setError(null);
       const token = localStorage.getItem('token');
@@ -72,7 +68,7 @@ const SchedulePage = () => {
 
       await axios.post(
         'http://localhost:8080/api/schedule/assign',
-        {}, // Пустое тело запроса
+        {},
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -82,14 +78,13 @@ const SchedulePage = () => {
         }
       );
 
-      // Обновляем расписание после успешной записи
       await fetchData();
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Ошибка записи на смену');
     }
   };
 
-  const handleRemove = async (dayIndex) => {
+  const handleRemove = async (dayIndex, slotIndex) => {
     try {
       setError(null);
       const token = localStorage.getItem('token');
@@ -111,7 +106,6 @@ const SchedulePage = () => {
         }
       );
 
-      // Обновляем расписание после успешного удаления
       await fetchData();
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Ошибка отмены записи');
@@ -135,8 +129,9 @@ const SchedulePage = () => {
     ) || { workers: [], maxWorkers: 3 };
   };
 
-  const isUserAssigned = (workers) => {
-    return currentUser && workers?.some(worker => worker.id === currentUser.id);
+  const isUserInSlot = (workers, slotIndex) => {
+    if (!currentUser || !workers || workers.length <= slotIndex) return false;
+    return workers[slotIndex]?.id === currentUser.id;
   };
 
   const changeWeek = (days) => {
@@ -182,12 +177,13 @@ const SchedulePage = () => {
             {daysOfWeek.map((day, index) => {
               const date = new Date(weekStart);
               date.setDate(date.getDate() + index);
+              const dayData = getDayData(index);
               return (
-                <th key={index}>
+                <th key={index} className={schedule.locked ? 'locked' : ''}>
                   <div>{day}</div>
                   <div className="date">{formatDate(date)}</div>
                   <div className="workers-count">
-                    {getDayData(index).workers?.length || 0}/{getDayData(index).maxWorkers || 3}
+                    {dayData.workers?.length || 0}/{dayData.maxWorkers || 3}
                   </div>
                 </th>
               );
@@ -195,41 +191,39 @@ const SchedulePage = () => {
           </tr>
         </thead>
         <tbody>
-          {[0, 1, 2].map((row) => (
-            <tr key={row}>
+          {[0, 1, 2].map((slotIndex) => (
+            <tr key={slotIndex}>
               {daysOfWeek.map((_, dayIndex) => {
                 const dayData = getDayData(dayIndex);
-                const worker = dayData.workers?.[row];
+                const worker = dayData.workers?.[slotIndex];
                 const isCurrentUser = worker?.id === currentUser?.id;
                 const isFull = dayData.workers?.length >= dayData.maxWorkers;
                 
                 return (
-                  <td key={dayIndex} className={dayData.isLocked ? 'locked' : ''}>
+                  <td key={dayIndex} className={schedule.locked ? 'locked' : ''}>
                     {worker ? (
                       <div className="worker-slot">
                         <span className="worker-name">
                           {worker.firstName} {worker.lastName}
                         </span>
-                        {isCurrentUser && (
+                        {isCurrentUser && !schedule.locked && (
                           <button
-                            onClick={() => handleRemove(dayIndex)}
+                            onClick={() => handleRemove(dayIndex, slotIndex)}
                             className="remove-button"
                             title="Отменить запись"
-                            disabled={dayData.isLocked}
                           >
                             ×
                           </button>
                         )}
                       </div>
                     ) : (
-                      row === 0 && (
+                      !schedule.locked && !isFull && (
                         <button
-                          onClick={() => handleAssign(dayIndex)}
+                          onClick={() => handleAssign(dayIndex, slotIndex)}
                           className="assign-button"
-                          disabled={isFull || dayData.isLocked}
-                          title={isFull ? 'День уже заполнен' : 'Записаться на смену'}
+                          title="Записаться на смену"
                         >
-                          {isFull ? 'Заполнено' : 'Записаться'}
+                          Записаться
                         </button>
                       )
                     )}
